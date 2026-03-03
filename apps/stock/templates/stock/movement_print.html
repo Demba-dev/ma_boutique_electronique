@@ -1,0 +1,574 @@
+<!-- templates/stock/movement_print.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bon de Mouvement #{{ movement.reference }}</title>
+    <style>
+        /* Styles généraux */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            padding: 40px;
+            color: #333;
+            background: #fff;
+            line-height: 1.5;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* En-tête */
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #1a237e;
+            padding-bottom: 25px;
+            margin-bottom: 35px;
+            position: relative;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a237e;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .logo i {
+            font-style: normal;
+            background: #1a237e;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 30px;
+            font-size: 20px;
+            margin-right: 10px;
+        }
+
+        .document-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 15px;
+            color: #2c3e50;
+            position: relative;
+            display: inline-block;
+            padding: 0 30px;
+        }
+
+        .document-title:before,
+        .document-title:after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 40px;
+            height: 2px;
+            background: #1a237e;
+        }
+
+        .document-title:before {
+            left: -20px;
+        }
+
+        .document-title:after {
+            right: -20px;
+        }
+
+        /* Badge de type de mouvement */
+        .type-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .type-in {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .type-out {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .type-adjustment {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        /* Grille d'informations */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 35px;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .info-item {
+            padding: 10px;
+        }
+
+        .info-item.full-width {
+            grid-column: span 3;
+        }
+
+        .label {
+            color: #6c757d;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .value {
+            font-weight: 600;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        .value small {
+            font-size: 14px;
+            font-weight: normal;
+            color: #6c757d;
+        }
+
+        /* Tableau produit */
+        .product-section {
+            margin: 35px 0;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .product-header {
+            background: #1a237e;
+            color: white;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .product-details {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            padding: 25px;
+            background: white;
+        }
+
+        .product-info {
+            padding-right: 20px;
+        }
+
+        .product-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a237e;
+            margin-bottom: 10px;
+        }
+
+        .product-meta {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .product-meta i {
+            display: inline-block;
+            width: 20px;
+        }
+
+        .quantity-box {
+            text-align: center;
+            padding: 0 20px;
+            border-left: 2px solid #e9ecef;
+            border-right: 2px solid #e9ecef;
+        }
+
+        .quantity-label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        .quantity-value {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .quantity-value.in {
+            color: #28a745;
+        }
+
+        .quantity-value.out {
+            color: #dc3545;
+        }
+
+        .quantity-value.adjustment {
+            color: #ffc107;
+        }
+
+        .stock-info {
+            padding-left: 20px;
+        }
+
+        .stock-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px dashed #e9ecef;
+        }
+
+        .stock-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Notes */
+        .notes-section {
+            margin: 35px 0;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #1a237e;
+        }
+
+        .notes-title {
+            font-weight: 600;
+            color: #1a237e;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .notes-content {
+            font-style: italic;
+            line-height: 1.8;
+            color: #2c3e50;
+        }
+
+        /* Signatures */
+        .signature-box {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+        }
+
+        .signature-item {
+            flex: 1;
+        }
+
+        .signature-line {
+            width: 100%;
+            border-top: 2px solid #1a237e;
+            margin-bottom: 10px;
+            padding-top: 15px;
+        }
+
+        .signature-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .signature-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .signature-date {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        /* Pied de page */
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 11px;
+            color: #6c757d;
+            border-top: 1px solid #e9ecef;
+            padding-top: 20px;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .qr-code {
+            width: 80px;
+            height: 80px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 5px;
+        }
+
+        /* Bouton d'impression */
+        .no-print {
+            margin-bottom: 25px;
+            text-align: right;
+        }
+
+        .btn-print {
+            background: #1a237e;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-print:hover {
+            background: #283593;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(26, 35, 126, 0.2);
+        }
+
+        .btn-print i {
+            margin-right: 10px;
+        }
+
+        .btn-close {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        /* Style d'impression */
+        @media print {
+            .no-print {
+                display: none;
+            }
+            
+            body {
+                padding: 20px;
+            }
+            
+            .info-grid {
+                break-inside: avoid;
+            }
+            
+            .product-section {
+                break-inside: avoid;
+            }
+            
+            .signature-box {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Utilitaires */
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .mt-4 { margin-top: 30px; }
+        .mb-4 { margin-bottom: 30px; }
+        .font-bold { font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn-close" onclick="window.close()">
+            <i class="fas fa-times"></i> Fermer
+        </button>
+        <button class="btn-print" onclick="window.print()">
+            <i class="fas fa-print"></i> Imprimer le document
+        </button>
+    </div>
+
+    <div class="header">
+        <div class="logo">
+            <i>DE</i> Diaby Electronic
+        </div>
+        <div class="document-title">
+            BON DE MOUVEMENT DE STOCK
+        </div>
+        <div class="type-badge 
+            {% if movement.type == 'IN' %}type-in
+            {% elif movement.type == 'OUT' %}type-out
+            {% else %}type-adjustment{% endif %}">
+            {% if movement.type == 'IN' %}
+                <i class="fas fa-arrow-down"></i> ENTRÉE DE STOCK
+            {% elif movement.type == 'OUT' %}
+                <i class="fas fa-arrow-up"></i> SORTIE DE STOCK
+            {% else %}
+                <i class="fas fa-balance-scale"></i> AJUSTEMENT DE STOCK
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="label">Référence du mouvement</div>
+            <div class="value">#{{ movement.reference|default:"N/A" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="label">Date de création</div>
+            <div class="value">{{ movement.created_at|date:"d F Y" }} <small>{{ movement.created_at|date:"H:i" }}</small></div>
+        </div>
+        <div class="info-item">
+            <div class="label">Opérateur</div>
+            <div class="value">{{ movement.created_by.get_full_name|default:movement.created_by.username }}</div>
+        </div>
+        
+        <div class="info-item">
+            <div class="label">Catégorie</div>
+            <div class="value">{{ movement.product.category.name|default:"Non catégorisé" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="label">Marque</div>
+            <div class="value">{{ movement.product.brand|default:"Non spécifiée" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="label">Statut</div>
+            <div class="value">
+                {% if movement.is_validated %}
+                    <span style="color: #28a745;">✓ Validé</span>
+                {% else %}
+                    <span style="color: #ffc107;">⏳ En attente</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="product-section">
+        <div class="product-header">
+            <i class="fas fa-box"></i> DÉTAIL DU PRODUIT
+        </div>
+        <div class="product-details">
+            <div class="product-info">
+                <div class="product-name">{{ movement.product.name }}</div>
+                <div class="product-meta">
+                    <i class="fas fa-barcode"></i> Code: {{ movement.product.code|default:"---" }}
+                </div>
+                {% if movement.product.imei %}
+                <div class="product-meta">
+                    <i class="fas fa-qrcode"></i> IMEI: {{ movement.product.imei }}
+                </div>
+                {% endif %}
+                {% if movement.product.description %}
+                <div class="product-meta" style="margin-top: 10px;">
+                    {{ movement.product.description|truncatechars:100 }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="quantity-box">
+                <div class="quantity-label">QUANTITÉ</div>
+                <div class="quantity-value 
+                    {% if movement.type == 'IN' %}in
+                    {% elif movement.type == 'OUT' %}out
+                    {% else %}adjustment{% endif %}">
+                    {% if movement.type == 'IN' %}+{% elif movement.type == 'OUT' %}-{% endif %}
+                    {{ movement.quantity }}
+                </div>
+                <div class="product-meta">{{ movement.product.unit|default:"unité(s)" }}</div>
+            </div>
+            
+            <div class="stock-info">
+                <div class="stock-item">
+                    <span>Stock avant mouvement</span>
+                    <span class="font-bold">{{ movement.stock_before|default:"0" }}</span>
+                </div>
+                <div class="stock-item">
+                    <span>Mouvement</span>
+                    <span class="font-bold {% if movement.type == 'IN' %}in{% elif movement.type == 'OUT' %}out{% endif %}">
+                        {% if movement.type == 'IN' %}+{% elif movement.type == 'OUT' %}-{% endif %}
+                        {{ movement.quantity }}
+                    </span>
+                </div>
+                <div class="stock-item" style="border-top: 2px solid #1a237e; margin-top: 10px; padding-top: 10px;">
+                    <span class="font-bold">Stock final</span>
+                    <span class="font-bold">{{ movement.stock_after|default:movement.quantity }}</span>
+                </div>
+                {% if movement.product.low_stock_threshold %}
+                <div style="margin-top: 15px; font-size: 12px; color: #6c757d;">
+                    Seuil d'alerte: {{ movement.product.low_stock_threshold }} unités
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if movement.notes %}
+    <div class="notes-section">
+        <div class="notes-title">
+            <i class="fas fa-sticky-note"></i> Notes et observations
+        </div>
+        <div class="notes-content">
+            "{{ movement.notes }}"
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="signature-box">
+        <div class="signature-item">
+            <div class="signature-line"></div>
+            <div class="signature-label">L'opérateur</div>
+            <div class="signature-name">{{ movement.created_by.username }}</div>
+            <div class="signature-date">{{ movement.created_at|date:"d/m/Y H:i" }}</div>
+        </div>
+        
+        <div class="signature-item">
+            <div class="signature-line"></div>
+            <div class="signature-label">Le magasinier / Contrôleur</div>
+            <div class="signature-name">____________________</div>
+            <div class="signature-date">Date: ___/___/______</div>
+        </div>
+        
+        <div class="signature-item">
+            <div class="signature-line"></div>
+            <div class="signature-label">Le gestionnaire</div>
+            <div class="signature-name">____________________</div>
+            <div class="signature-date">Date: ___/___/______</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-content">
+            <div>
+                <strong>Diaby Electronic</strong><br>
+                Gestion de stock & Système de vente
+            </div>
+            <div>
+                Document généré le {% now "d/m/Y H:i:s" %}<br>
+                {{ movement.reference }}
+            </div>
+            <div class="qr-code">
+                <!-- QR Code simulé - à remplacer par un vrai QR code -->
+                <div style="width: 100%; height: 100%; background: repeating-linear-gradient(45deg, #000 0px, #000 5px, #fff 5px, #fff 10px);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ajout des icônes Font Awesome pour l'impression -->
+    <link rel="stylesheet" href="{% static 'vendor/fontawesome/css/all.min.css' %}">
+</body>
+</html>

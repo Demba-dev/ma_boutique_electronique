@@ -1,0 +1,594 @@
+<!-- templates/accounts/settings_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Paramètres - Diaby Electronic{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-cog me-2"></i>Paramètres du système
+{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item active">Paramètres</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4">
+    <div class="row">
+        <!-- Barre latérale de navigation des paramètres -->
+        <div class="col-md-3">
+            <div class="card shadow border-0 mb-4" style="border-radius: 12px; overflow: hidden;">
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="settings-tabs" role="tablist">
+                        <a class="list-group-item list-group-item-action py-3 d-flex align-items-center" 
+                           id="profile-tab" data-bs-toggle="pill" href="#profile" role="tab"
+                           style="border-left: 4px solid transparent; transition: all 0.2s;">
+                            <i class="fas fa-user-circle me-3 fa-lg" style="width: 24px;"></i>
+                            <span>Mon Profil</span>
+                        </a>
+                        
+                        {% if user.role == 'admin' %}
+                        <a class="list-group-item list-group-item-action py-3 d-flex align-items-center" 
+                           id="users-tab" data-bs-toggle="pill" href="#users" role="tab"
+                           style="border-left: 4px solid transparent;">
+                            <i class="fas fa-users-cog me-3 fa-lg" style="width: 24px;"></i>
+                            <span>Gestion des utilisateurs</span>
+                        </a>
+                        
+                        <a class="list-group-item list-group-item-action py-3 d-flex align-items-center" 
+                           id="shop-tab" data-bs-toggle="pill" href="#shop" role="tab"
+                           style="border-left: 4px solid transparent;">
+                            <i class="fas fa-store me-3 fa-lg" style="width: 24px;"></i>
+                            <span>Paramètres boutique</span>
+                        </a>
+                        
+                        <a class="list-group-item list-group-item-action py-3 d-flex align-items-center" 
+                           id="system-tab" data-bs-toggle="pill" href="#system" role="tab"
+                           style="border-left: 4px solid transparent;">
+                            <i class="fas fa-database me-3 fa-lg" style="width: 24px;"></i>
+                            <span>Système & Maintenance</span>
+                        </a>
+                        {% endif %}
+                        
+                        <hr class="my-2">
+                        
+                        <a class="list-group-item list-group-item-action py-3 d-flex align-items-center text-danger" 
+                           href="{% url 'accounts:logout' %}"
+                           style="border-left: 4px solid transparent;">
+                            <i class="fas fa-sign-out-alt me-3 fa-lg" style="width: 24px;"></i>
+                            <span>Déconnexion</span>
+                        </a>
+                    </div>
+                </div>
+                
+                {% if user.role == 'admin' %}
+                <div class="card-footer bg-white py-3 border-0">
+                    <small class="text-muted d-flex align-items-center">
+                        <i class="fas fa-shield-alt me-2 text-primary"></i>
+                        Accès administrateur complet
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contenu des paramètres -->
+        <div class="col-md-9">
+            <div class="tab-content" id="settings-tabContent">
+                
+                <!-- Onglet 1: Profil -->
+                <div class="tab-pane fade show active" id="profile" role="tabpanel">
+                    <div class="card shadow border-0" style="border-radius: 12px;">
+                        <div class="card-header bg-white py-3 border-0">
+                            <h6 class="mb-0 fw-bold" style="color: var(--primary-dark);">
+                                <i class="fas fa-id-card me-2"></i>Informations personnelles
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Avatar et infos rapides -->
+                            <div class="row align-items-center mb-4">
+                                <div class="col-auto">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
+                                         style="width: 90px; height: 90px; font-size: 2.2rem; background: linear-gradient(135deg, var(--primary-dark), var(--primary));">
+                                        {{ user.username|first|upper }}
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <h4 class="mb-1">{{ user.get_full_name|default:user.username }}</h4>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge me-2" style="background-color: var(--primary-soft); color: var(--primary-dark);">
+                                            <i class="fas {% if user.role == 'admin' %}fa-crown{% elif user.role == 'manager' %}fa-chart-line{% else %}fa-cash-register{% endif %} me-1"></i>
+                                            {{ user.get_role_display }}
+                                        </span>
+                                        <span class="text-muted">
+                                            <i class="fas fa-calendar-alt me-1"></i>Membre depuis {{ user.date_joined|date:"F Y" }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <form>
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted">Nom d'utilisateur</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-0">
+                                                <i class="fas fa-user text-primary"></i>
+                                            </span>
+                                            <input type="text" class="form-control border-0 bg-light" value="{{ user.username }}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted">Email</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-0">
+                                                <i class="fas fa-envelope text-primary"></i>
+                                            </span>
+                                            <input type="email" class="form-control border-0 bg-light" value="{{ user.email|default:'Non renseigné' }}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted">Téléphone</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-0">
+                                                <i class="fas fa-phone text-primary"></i>
+                                            </span>
+                                            <input type="text" class="form-control border-0 bg-light" value="{{ user.phone|default:'Non renseigné' }}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted">Date d'inscription</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-0">
+                                                <i class="fas fa-calendar text-primary"></i>
+                                            </span>
+                                            <input type="text" class="form-control border-0 bg-light" value="{{ user.date_joined|date:'d/m/Y' }}" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4 d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                        <i class="fas fa-key me-2"></i>Changer le mot de passe
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary">
+                                        <i class="fas fa-edit me-2"></i>Modifier le profil
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Activité récente -->
+                        <div class="card-footer bg-white border-0">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary-soft rounded-circle p-3 me-3">
+                                            <i class="fas fa-shopping-cart text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">Ventes aujourd'hui</small>
+                                            <h6 class="mb-0">{{ today_sales|default:"0" }}</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary-soft rounded-circle p-3 me-3">
+                                            <i class="fas fa-clock text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">Dernière connexion</small>
+                                            <h6 class="mb-0">{{ user.last_login|date:"d/m/Y H:i"|default:"Première fois" }}</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary-soft rounded-circle p-3 me-3">
+                                            <i class="fas fa-shield-alt text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">Statut sécurité</small>
+                                            <h6 class="mb-0 text-success"><i class="fas fa-check-circle me-1"></i>OK</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if user.role == 'admin' %}
+                <!-- Onglet 2: Utilisateurs -->
+                <div class="tab-pane fade" id="users" role="tabpanel">
+                    <div class="card shadow border-0" style="border-radius: 12px;">
+                        <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold" style="color: var(--primary-dark);">
+                                <i class="fas fa-users-cog me-2"></i>Gestion des utilisateurs
+                            </h6>
+                            <a href="{% url 'accounts:create_user' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-2"></i>Nouvel utilisateur
+                            </a>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="ps-4">Utilisateur</th>
+                                            <th>Rôle</th>
+                                            <th>Contact</th>
+                                            <th>Dernière connexion</th>
+                                            <th>Statut</th>
+                                            <th class="text-end pe-4">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for u in users %}
+                                        <tr>
+                                            <td class="ps-4">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-circle-sm me-3" 
+                                                         style="width: 40px; height: 40px; background-color: var(--primary-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                                        <span style="color: var(--primary-dark); font-weight: 600;">{{ u.username|first|upper }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold">{{ u.get_full_name|default:u.username }}</div>
+                                                        <small class="text-muted">{{ u.username }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge" style="background-color: {% if u.role == 'admin' %}#dc3545{% elif u.role == 'manager' %}#0dcaf0{% else %}#198754{% endif %};">
+                                                    <i class="fas {% if u.role == 'admin' %}fa-crown{% elif u.role == 'manager' %}fa-chart-line{% else %}fa-cash-register{% endif %} me-1"></i>
+                                                    {{ u.get_role_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    <i class="fas fa-envelope me-1 text-muted"></i>{{ u.email|default:"-" }}<br>
+                                                    <i class="fas fa-phone me-1 text-muted"></i>{{ u.phone|default:"-" }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <small>{{ u.last_login|date:"d/m/Y H:i"|default:"Jamais" }}</small>
+                                            </td>
+                                            <td>
+                                                {% if u.is_active %}
+                                                <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Actif</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i>Inactif</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <div class="btn-group">
+                                                    <button class="btn btn-sm btn-outline-primary" title="Modifier">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" title="Désactiver">
+                                                        <i class="fas fa-user-slash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4">
+                                                <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">Aucun autre utilisateur</p>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet 3: Boutique -->
+                <div class="tab-pane fade" id="shop" role="tabpanel">
+                    <div class="card shadow border-0" style="border-radius: 12px;">
+                        <div class="card-header bg-white py-3 border-0">
+                            <h6 class="mb-0 fw-bold" style="color: var(--primary-dark);">
+                                <i class="fas fa-store me-2"></i>Paramètres de la boutique
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if user.role != 'admin' %}
+                            <div class="alert alert-warning">
+                                Accès en lecture seule. Seul l’administrateur peut modifier ces paramètres.
+                            </div>
+                            {% endif %}
+                            <form method="post" id="shopSettingsForm" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="form_type" value="shop_settings">
+                                <div class="row g-4">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold" for="{{ shop_form.name.id_for_label }}">Nom de la boutique</label>
+                                        {{ shop_form.name }}
+                                        <small class="text-muted">Nom affiché sur les reçus et factures</small>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold" for="{{ shop_form.logo.id_for_label }}">Logo</label>
+                                        {{ shop_form.logo }}
+                                        {% if shop_settings and shop_settings.logo %}
+                                            <div class="mt-2">
+                                                <img src="{{ shop_settings.logo.url }}" alt="Logo boutique" class="img-thumbnail" style="max-height: 80px;">
+                                            </div>
+                                        {% endif %}
+                                        <small class="text-muted">PNG/JPG, recommandé 256x256</small>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold" for="{{ shop_form.phone.id_for_label }}">Téléphone</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                            {{ shop_form.phone }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold" for="{{ shop_form.email.id_for_label }}">Email</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                            {{ shop_form.email }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold" for="{{ shop_form.address.id_for_label }}">Adresse</label>
+                                        {{ shop_form.address }}
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold" for="{{ shop_form.currency.id_for_label }}">Devise</label>
+                                        {{ shop_form.currency }}
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold" for="{{ shop_form.ninea.id_for_label }}">NINEA / RC</label>
+                                        {{ shop_form.ninea }}
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold" for="{{ shop_form.tax_number.id_for_label }}">Numéro fiscal</label>
+                                        {{ shop_form.tax_number }}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet 4: Système & Maintenance -->
+                <div class="tab-pane fade" id="system" role="tabpanel">
+                    <div class="card shadow border-0" style="border-radius: 12px;">
+                        <div class="card-header bg-white py-3 border-0">
+                            <h6 class="mb-0 fw-bold" style="color: var(--primary-dark);">
+                                <i class="fas fa-database me-2"></i>Système & Maintenance
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Alertes Stock -->
+                            <div class="mb-5">
+                                <h6 class="fw-bold text-primary mb-3">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Gestion des alertes stock
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Seuil d'alerte global</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" value="5">
+                                            <span class="input-group-text bg-white">unités</span>
+                                        </div>
+                                        <small class="text-muted">Seuil par défaut pour tous les produits</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mt-4">
+                                            <input class="form-check-input" type="checkbox" checked>
+                                            <label class="form-check-label fw-bold">
+                                                Activer les notifications email
+                                            </label>
+                                            <br>
+                                            <small class="text-muted">Recevoir des alertes quand le stock est faible</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sauvegarde et Export -->
+                            <div class="mb-5">
+                                <h6 class="fw-bold text-primary mb-3">
+                                    <i class="fas fa-save me-2"></i>Sauvegarde et export
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-primary w-100 py-3">
+                                            <i class="fas fa-database fa-2x mb-2 d-block"></i>
+                                            Sauvegarde BDD
+                                            <small class="d-block text-muted">.sql</small>
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-success w-100 py-3">
+                                            <i class="fas fa-file-excel fa-2x mb-2 d-block"></i>
+                                            Export catalogue
+                                            <small class="d-block text-muted">Produits & stocks</small>
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-info w-100 py-3">
+                                            <i class="fas fa-file-invoice fa-2x mb-2 d-block"></i>
+                                            Rapport ventes
+                                            <small class="d-block text-muted">Période au choix</small>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Logs système -->
+                            <div>
+                                <h6 class="fw-bold text-primary mb-3">
+                                    <i class="fas fa-history me-2"></i>Activité système
+                                </h6>
+                                <div class="bg-light p-3 rounded">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span><i class="fas fa-check-circle text-success me-2"></i>Dernière sauvegarde</span>
+                                        <span>{% now "d/m/Y H:i" %}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span><i class="fas fa-users text-primary me-2"></i>Utilisateurs actifs</span>
+                                        <span>{{ users|length }}/{{ users|length }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span><i class="fas fa-coins text-success me-2"></i>Bénéfice net du jour</span>
+                                        <span class="fw-bold text-success">{{ daily_net_profit|floatformat:0 }} FCFA</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span><i class="fas fa-box text-warning me-2"></i>Produits stock faible</span>
+                                        <span>{{ low_stock_count|default:"0" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer bg-white border-0">
+                            <div class="d-flex justify-content-end">
+                                {% if user.role == 'admin' %}
+                                <button type="submit" form="shopSettingsForm" class="btn btn-success px-5">
+                                    <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal changement mot de passe -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-dark), var(--primary));">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-key me-2"></i>Changer le mot de passe
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Mot de passe actuel</label>
+                        <input type="password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nouveau mot de passe</label>
+                        <input type="password" class="form-control" required>
+                        <small class="text-muted">Minimum 8 caractères</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Confirmer le mot de passe</label>
+                        <input type="password" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary">Changer le mot de passe</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    :root {
+        --primary-dark: #1a237e;
+        --primary: #283593;
+        --primary-light: #5c6bc0;
+        --primary-soft: #e8eaf6;
+    }
+    
+    .list-group-item {
+        border: none;
+        color: #2c3e50;
+    }
+    
+    .list-group-item:hover {
+        background-color: var(--primary-soft);
+        color: var(--primary-dark);
+    }
+    
+    .list-group-item.active {
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+        color: white;
+        border-left: 4px solid var(--primary-light) !important;
+    }
+    
+    .list-group-item.active i {
+        color: white;
+    }
+    
+    .bg-primary-soft {
+        background-color: var(--primary-soft) !important;
+    }
+    
+    .btn-outline-primary {
+        color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+    
+    .avatar-circle-sm {
+        transition: transform 0.2s;
+    }
+    
+    .avatar-circle-sm:hover {
+        transform: scale(1.1);
+    }
+    
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    /* Animation */
+    .tab-pane {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .btn-group .btn {
+            font-size: 0.8rem;
+        }
+    }
+</style>
+{% endblock %}

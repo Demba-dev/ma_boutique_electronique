@@ -1,0 +1,409 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+    <title>Diaby Electronic - {% block title %}Accueil{% endblock %}</title>
+    
+    <!-- Bootstrap CSS local -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <!-- Font Awesome 6 local -->
+    <link rel="stylesheet" href="{% static 'css/all.min.css' %}">
+    
+    <style>
+        :root {
+            --primary-dark: #1a237e;
+            --primary: #283593;
+            --primary-light: #5c6bc0;
+            --primary-soft: #e8eaf6;
+            --gray-200: #e9ecef;
+            --gray-800: #343a40;
+            --sidebar-width: 260px;
+            --sidebar-collapsed-width: 70px;
+            --header-height: 60px;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        /* Navbar styling */
+        .navbar {
+            background: white !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            height: var(--header-height);
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            z-index: 1030;
+            padding: 0; /* On laisse le container-fluid gérer le padding */
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            color: var(--primary-dark) !important;
+            font-weight: 600;
+            font-size: 1.4rem;
+        }
+        
+        .navbar-brand i {
+            color: var(--primary);
+            margin-right: 8px;
+        }
+        
+        /* Sidebar styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            height: calc(100vh - var(--header-height));
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            z-index: 1020;
+        }
+        
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+        
+        .sidebar .nav-link {
+            color: #5f6368;
+            padding: 12px 20px;
+            margin: 4px 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .sidebar .nav-link i {
+            font-size: 1.2rem;
+            width: 24px;
+            color: var(--primary);
+        }
+        
+        .sidebar .nav-link:hover {
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+        }
+        
+        .sidebar .nav-link.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .sidebar .nav-link.active i {
+            color: white;
+        }
+        
+        .sidebar.collapsed .nav-link span {
+            display: none;
+        }
+        
+        .sidebar.collapsed .nav-link {
+            justify-content: center;
+            padding: 12px;
+        }
+        
+        .sidebar.collapsed .nav-link i {
+            margin: 0;
+        }
+        
+        /* Main content area */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 24px;
+            transition: all 0.3s ease;
+            min-height: calc(100vh - var(--header-height));
+        }
+        
+        .main-content.expanded {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+        
+        /* User menu in navbar */
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-dark);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .user-avatar i {
+            font-size: 1.3rem;
+        }
+        
+        /* Toggle sidebar button */
+        .toggle-sidebar {
+            background: #f8f9fa; /* Fond léger pour le voir */
+            border: 1px solid var(--gray-200);
+            color: var(--primary-dark) !important;
+            font-size: 1.2rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .toggle-sidebar:hover {
+            background: var(--primary-soft);
+            color: var(--primary) !important;
+        }
+        
+        /* Breadcrumb */
+        .breadcrumb-area {
+            margin-bottom: 20px;
+        }
+        
+        .breadcrumb {
+            background: transparent;
+            padding: 0;
+        }
+        
+        .breadcrumb-item a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .breadcrumb-item.active {
+            color: var(--gray-800);
+        }
+        
+        /* Cards styling */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background: white;
+            border-bottom: 1px solid var(--primary-soft);
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+            }
+            
+            .navbar-brand span {
+                display: none;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+     {% include 'includes/navbar.html' %}
+   
+
+    <!-- Sidebar -->
+    {% include 'includes/sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Breadcrumb -->
+        {% block breadcrumb %}
+        <div class="breadcrumb-area">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'accounts:home' %}">Accueil</a></li>
+                    {% block breadcrumb_items %}{% endblock %}
+                </ol>
+            </nav>
+        </div>
+        {% endblock %}
+        
+        <!-- Page Title -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0">{% block page_title %}{% endblock %}</h4>
+            <div>{% block page_actions %}{% endblock %}</div>
+        </div>
+        
+        <!-- Messages/Alerts -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Content -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Scripts locaux -->
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+        // Sidebar toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const toggleBtn = document.getElementById('toggleSidebar');
+            const mobileToggle = document.getElementById('mobileToggle');
+            
+            // Check localStorage for sidebar state
+            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+            }
+            
+            // Toggle sidebar on button click (desktop)
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                    
+                    // Save state
+                    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                });
+            }
+            
+            // Mobile toggle
+            if (mobileToggle) {
+                mobileToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                });
+            }
+            
+            // Auto-close mobile sidebar when clicking outside
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 768) {
+                    if (!sidebar.contains(event.target) && !mobileToggle.contains(event.target)) {
+                        sidebar.classList.remove('show');
+                    }
+                }
+            });
+
+            // Panier (si présent)
+            const cartButton = document.getElementById('cartButton');
+            const cartDropdown = document.getElementById('cartDropdown');
+            const cartCountBadge = document.getElementById('cartCountBadge');
+
+            function renderCartSummary(data) {
+                if (!cartDropdown) return;
+                cartDropdown.innerHTML = '';
+
+                if (!data.items || data.items.length === 0) {
+                    cartDropdown.innerHTML = '<li><span class="dropdown-item-text text-muted">Panier vide</span></li>';
+                } else {
+                    data.items.forEach(item => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <div class="dropdown-item-text">
+                                <div class="d-flex justify-content-between">
+                                    <strong class="me-2">${item.name}</strong>
+                                    <span>${item.qty}x</span>
+                                </div>
+                                <small class="text-muted">${item.subtotal.toLocaleString()} FCFA</small>
+                            </div>
+                        `;
+                        cartDropdown.appendChild(li);
+                    });
+                    const divider = document.createElement('li');
+                    divider.innerHTML = '<hr class="dropdown-divider">';
+                    cartDropdown.appendChild(divider);
+                    const total = document.createElement('li');
+                    total.innerHTML = `
+                        <div class="dropdown-item-text d-flex justify-content-between">
+                            <span>Total</span>
+                            <strong>${data.total_amount.toLocaleString()} FCFA</strong>
+                        </div>
+                    `;
+                    cartDropdown.appendChild(total);
+
+                    const checkoutUrl = cartButton?.dataset.cartCheckoutUrl;
+                    if (checkoutUrl) {
+                        const action = document.createElement('li');
+                        action.innerHTML = `
+                            <div class="d-grid mt-2">
+                                <a class="btn btn-sm btn-primary" href="${checkoutUrl}">
+                                    <i class="fas fa-cash-register me-1"></i>Passer au paiement
+                                </a>
+                            </div>
+                        `;
+                        cartDropdown.appendChild(action);
+                    }
+                }
+
+                if (cartCountBadge) {
+                    const qty = data.total_qty || 0;
+                    cartCountBadge.textContent = qty;
+                    cartCountBadge.classList.toggle('d-none', qty === 0);
+                }
+            }
+
+            window.refreshCartSummary = function() {
+                if (!cartButton) return;
+                const url = cartButton.dataset.cartSummaryUrl;
+                if (!url) return;
+                fetch(url, { credentials: 'same-origin' })
+                    .then(res => res.ok ? res.json() : null)
+                    .then(data => {
+                        if (data && data.ok) renderCartSummary(data);
+                    })
+                    .catch(() => {});
+            };
+
+            if (cartButton) {
+                window.refreshCartSummary();
+            }
+            
+            // Tooltips initialization
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

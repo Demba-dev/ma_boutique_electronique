@@ -1,0 +1,578 @@
+<!-- templates/accounts/login.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - {{ shop_settings.name|default:"Diaby Electronic" }}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-dark: #1a237e;
+            --primary: #283593;
+            --primary-light: #5c6bc0;
+            --primary-soft: #e8eaf6;
+            --gradient: linear-gradient(135deg, #1a237e 0%, #283593 50%, #5c6bc0 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Éléments décoratifs */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, var(--primary-soft) 0%, transparent 70%);
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--gradient);
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        .circle-1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            right: -100px;
+        }
+
+        .circle-2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            left: -50px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(26, 35, 126, 0.25);
+            animation: slideIn 0.6s ease-out;
+            background: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Panneau gauche - Image/Branding */
+        .login-branding {
+            flex: 1;
+            background: var(--gradient);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-branding::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><path d="M20 20 L80 20 L80 80 L20 80 Z" stroke="white" fill="none" stroke-width="2"/><circle cx="50" cy="50" r="10" stroke="white" fill="none" stroke-width="2"/></svg>') repeat;
+            background-size: 30px 30px;
+            opacity: 0.1;
+        }
+
+        .brand-logo {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.2);
+            padding: 10px 30px;
+            border-radius: 60px;
+            letter-spacing: 4px;
+        }
+
+        .brand-logo-img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            background: rgba(255,255,255,0.2);
+            border-radius: 30px;
+            padding: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(5px);
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .brand-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+            width: 100%;
+        }
+
+        .features-list li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1rem;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .features-list li i {
+            width: 30px;
+            font-size: 1.2rem;
+            margin-right: 15px;
+        }
+
+        /* Panneau droit - Formulaire */
+        .login-form {
+            flex: 1;
+            padding: 50px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-header {
+            margin-bottom: 40px;
+        }
+
+        .form-header h3 {
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .form-header p {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .input-group {
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .input-group:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-soft);
+        }
+
+        .input-group-text {
+            background: #f8fafc;
+            border: none;
+            color: var(--primary);
+            padding: 0 15px;
+        }
+
+        .form-control {
+            border: none;
+            padding: 12px 15px;
+            font-size: 0.95rem;
+            background: #f8fafc;
+        }
+
+        .form-control:focus {
+            box-shadow: none;
+            background: #f8fafc;
+        }
+
+        .password-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0 25px;
+        }
+
+        .remember-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .remember-checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+
+        .forgot-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .forgot-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .btn-login {
+            background: var(--gradient);
+            border: none;
+            padding: 14px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 12px;
+            color: white;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-login:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px var(--primary);
+        }
+
+        .btn-login i {
+            margin-right: 10px;
+        }
+
+        .demo-credentials {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .demo-credentials p {
+            margin-bottom: 10px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .credential-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .credential-item:last-child {
+            border-bottom: none;
+        }
+
+        .role-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: auto;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            padding-top: 30px;
+        }
+
+        /* Alertes */
+        .alert {
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 25px;
+            border: none;
+            background: #fef2f2;
+            color: #991b1b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert i {
+            font-size: 1.2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-container {
+                flex-direction: column;
+                max-width: 450px;
+            }
+            
+            .login-branding {
+                padding: 30px;
+            }
+            
+            .login-form {
+                padding: 40px;
+            }
+            
+            .features-list {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Éléments décoratifs -->
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+
+    <div class="login-container">
+        <!-- Panneau gauche - Branding -->
+        <div class="login-branding">
+            {% if shop_settings and shop_settings.logo %}
+                <img src="{{ shop_settings.logo.url }}" alt="{{ shop_settings.name }}" class="brand-logo-img">
+            {% else %}
+                <div class="brand-logo">DE</div>
+            {% endif %}
+            
+            <div class="brand-title">
+                {{ shop_settings.name|default:"DIABY ELECTRONIC" }}
+            </div>
+            
+            <div class="brand-subtitle">
+                Système de Gestion Intégré
+            </div>
+
+            <ul class="features-list">
+                <li>
+                    <i class="fas fa-bolt"></i>
+                    <span>Gestion des ventes en temps réel</span>
+                </li>
+                <li>
+                    <i class="fas fa-boxes"></i>
+                    <span>Contrôle de stock automatisé</span>
+                </li>
+                <li>
+                    <i class="fas fa-chart-line"></i>
+                    <span>Rapports et statistiques</span>
+                </li>
+                <li>
+                    <i class="fas fa-users"></i>
+                    <span>Gestion clients et fournisseurs</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Panneau droit - Formulaire -->
+        <div class="login-form">
+            <div class="form-header">
+                <h3><i class="fas fa-lock me-2"></i>Connexion</h3>
+                <p>Accédez à votre espace de gestion</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags %}{{ message.tags }}{% endif %}">
+                        <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label class="form-label">
+                        <i class="fas fa-user me-2"></i>Nom d'utilisateur
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <input type="text" 
+                               name="username" 
+                               class="form-control" 
+                               placeholder="Entrez votre identifiant" 
+                               required 
+                               autofocus>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">
+                        <i class="fas fa-lock me-2"></i>Mot de passe
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" 
+                               name="password" 
+                               class="form-control" 
+                               placeholder="••••••••" 
+                               required
+                               id="passwordInput">
+                        <span class="input-group-text" style="cursor: pointer;" onclick="togglePassword()">
+                            <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                        </span>
+                    </div>
+                </div>
+
+                
+
+                <button type="submit" class="btn btn-login w-100">
+                    <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+                </button>
+            </form>
+
+            
+
+            <div class="footer-text">
+                &copy; {% now "Y" %} {{ shop_settings.name|default:"DIABY ELECTRONIC" }}. 
+                <br class="d-md-none">
+                Tous droits réservés.
+                <br>
+                <small>Version 2.0.0</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+        // Afficher/Masquer le mot de passe
+        function togglePassword() {
+            const passwordInput = document.getElementById('passwordInput');
+            const icon = document.getElementById('togglePasswordIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Animation de chargement du bouton
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const btn = document.querySelector('.btn-login');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connexion en cours...';
+            btn.disabled = true;
+        });
+
+        // Raccourci clavier (Entrée pour soumettre)
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const form = document.querySelector('form');
+                if (form && document.activeElement.tagName !== 'BUTTON') {
+                    form.submit();
+                }
+            }
+        });
+
+        // Autofill detection pour animation
+        setTimeout(() => {
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                if (input.value) {
+                    input.parentElement.classList.add('filled');
+                }
+            });
+        }, 100);
+    </script>
+</body>
+</html>

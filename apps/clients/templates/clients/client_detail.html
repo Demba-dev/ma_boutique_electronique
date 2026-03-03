@@ -1,0 +1,649 @@
+<!-- templates/clients/client_detail.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ client.name }} - Diaby Electronic{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-user-circle me-2"></i>{{ client.name }}
+{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'clients:client_list' %}">Clients</a></li>
+    <li class="breadcrumb-item active">{{ client.name|truncatechars:30 }}</li>
+{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group" role="group">
+        {% if user.role == 'admin' %}
+        <a href="{% url 'clients:client_update' client.id %}" class="btn btn-warning">
+            <i class="fas fa-edit me-2"></i>Modifier
+        </a>
+        {% endif %}
+        <a href="{% url 'sales:cart_checkout' %}?client={{ client.id }}" class="btn btn-success">
+            <i class="fas fa-shopping-cart me-2"></i>Nouvelle vente
+        </a>
+        <a href="{% url 'clients:client_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Retour
+        </a>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Colonne gauche - Informations client -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow sticky-top" style="top: 80px;">
+            <!-- En-tête avec avatar -->
+            <div class="card-header bg-white py-3 text-center">
+                <div class="client-avatar mx-auto mb-3">
+                    {% if client.avatar %}
+                        <img src="{{ client.avatar.url }}" alt="{{ client.name }}" class="rounded-circle img-fluid" style="width: 120px; height: 120px; object-fit: cover;">
+                    {% else %}
+                        <div class="avatar-circle mx-auto">
+                            <span class="avatar-initials">{{ client.name|first|upper }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <h4 class="mb-1">{{ client.name }}</h4>
+                
+                <!-- Badges -->
+                <div class="d-flex justify-content-center gap-2 mt-2">
+                    {% if client.is_vip %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-crown me-1"></i>VIP
+                        </span>
+                    {% endif %}
+                    
+                    {% if client.is_active %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>Actif
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-ban me-1"></i>Inactif
+                        </span>
+                    {% endif %}
+                    
+                    {% if client.balance > 0 %}
+                        <span class="badge bg-danger">
+                            <i class="fas fa-arrow-up me-1"></i>Doit {{ client.balance }} FCFA
+                        </span>
+                    {% elif client.balance < 0 %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-arrow-down me-1"></i>Avance de {{ client.balance|slice:"1:" }} FCFA
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Coordonnées -->
+                <h6 class="text-primary mb-3">
+                    <i class="fas fa-address-card me-2"></i>Coordonnées
+                </h6>
+                
+                <div class="contact-info mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="info-icon bg-primary-soft">
+                            <i class="fas fa-phone text-primary"></i>
+                        </div>
+                        <div class="ms-3">
+                            <small class="text-muted">Téléphone</small>
+                            <p class="mb-0 fw-bold">
+                                <a href="tel:{{ client.phone }}" class="text-decoration-none">{{ client.phone }}</a>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if client.secondary_phone %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="info-icon bg-primary-soft">
+                            <i class="fas fa-phone-alt text-primary"></i>
+                        </div>
+                        <div class="ms-3">
+                            <small class="text-muted">Téléphone secondaire</small>
+                            <p class="mb-0">{{ client.secondary_phone }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if client.email %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="info-icon bg-primary-soft">
+                            <i class="fas fa-envelope text-primary"></i>
+                        </div>
+                        <div class="ms-3">
+                            <small class="text-muted">Email</small>
+                            <p class="mb-0">
+                                <a href="mailto:{{ client.email }}" class="text-decoration-none">{{ client.email }}</a>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if client.address %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="info-icon bg-primary-soft">
+                            <i class="fas fa-map-marker-alt text-primary"></i>
+                        </div>
+                        <div class="ms-3">
+                            <small class="text-muted">Adresse</small>
+                            <p class="mb-0">{{ client.address }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if client.birth_date %}
+                    <div class="d-flex align-items-center">
+                        <div class="info-icon bg-primary-soft">
+                            <i class="fas fa-birthday-cake text-primary"></i>
+                        </div>
+                        <div class="ms-3">
+                            <small class="text-muted">Date de naissance</small>
+                            <p class="mb-0">{{ client.birth_date|date:"d F Y" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Informations système -->
+                <h6 class="text-primary mb-3">
+                    <i class="fas fa-clock me-2"></i>Informations système
+                </h6>
+                
+                <div class="system-info bg-light p-3 rounded">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Client depuis</span>
+                        <span class="fw-bold">{{ client.created_at|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Dernière modification</span>
+                        <span class="fw-bold">{{ client.updated_at|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Dernier achat</span>
+                        <span class="fw-bold">
+                            {% if last_purchase %}
+                                {{ last_purchase.created_at|timesince }}
+                            {% else %}
+                                Aucun achat
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Actions rapides -->
+                <div class="d-grid gap-2 mt-4">
+                    <button class="btn btn-outline-primary" onclick="sendSMS()">
+                        <i class="fas fa-sms me-2"></i>Envoyer un SMS
+                    </button>
+                    <button class="btn btn-outline-info" onclick="viewHistory()">
+                        <i class="fas fa-history me-2"></i>Voir tout l'historique
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card-footer bg-white">
+                <small class="text-muted">
+                    <i class="fas fa-id-card me-1"></i>ID Client: #{{ client.id }}
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Colonne droite - Statistiques et historique -->
+    <div class="col-lg-8">
+        <!-- Cartes de statistiques -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card bg-primary text-white">
+                    <div class="card-body">
+                        <h6 class="card-title">Total achats</h6>
+                        <h3 class="mb-0">{{ total_purchases|default:"0" }}</h3>
+                        <small>transactions</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-success text-white">
+                    <div class="card-body">
+                        <h6 class="card-title">Montant total</h6>
+                        <h3 class="mb-0">{{ total_spent|default:"0"|floatformat:0 }}</h3>
+                        <small>FCFA</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-info text-white">
+                    <div class="card-body">
+                        <h6 class="card-title">Panier moyen</h6>
+                        <h3 class="mb-0">{{ avg_basket|default:"0"|floatformat:0 }}</h3>
+                        <small>FCFA</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card bg-warning text-white">
+                    <div class="card-body">
+                        <h6 class="card-title">Dernier achat</h6>
+                        <h3 class="mb-0">{{ days_since_last_purchase|default:"-" }}</h3>
+                        <small>jours</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Graphique d'activité -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-line me-2 text-primary"></i>
+                    Activité d'achat (6 derniers mois)
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="purchaseChart" height="100"></canvas>
+            </div>
+        </div>
+        
+        <!-- Historique des achats récents -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2 text-primary"></i>
+                    Historique des achats récents
+                </h6>
+                <a href="{% url 'sales:sale_list' %}" class="btn btn-sm btn-outline-primary">Voir tout</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Facture</th>
+                                <th>Produits</th>
+                                <th>Montant</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in recent_sales %}
+                            <tr>
+                                <td>{{ sale.created_at|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <span class="font-monospace">{{ sale.invoice_number }}</span>
+                                </td>
+                                <td>{{ sale.items_count }} article(s)</td>
+                                <td class="fw-bold">{{ sale.total_amount|floatformat:0 }} FCFA</td>
+                                <td>
+                                    {% if sale.remaining_amount == 0 %}
+                                        <span class="badge bg-success">Payée</span>
+                                    {% elif sale.amount_paid > 0 %}
+                                        <span class="badge bg-warning text-dark">Partielle</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Impayée</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'sales:sale_detail' sale.id %}" class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <i class="fas fa-shopping-cart fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">Aucun achat enregistré</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Historique des paiements -->
+        <div class="card shadow">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-credit-card me-2 text-primary"></i>
+                    Historique des paiements
+                </h6>
+                <button class="btn btn-sm btn-success" onclick="recordPayment()" {% if not has_unpaid_sales %}disabled{% endif %}>
+                    <i class="fas fa-plus-circle me-1"></i>Enregistrer un paiement
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Référence</th>
+                                <th>Mode</th>
+                                <th>Montant</th>
+                                <th>Solde après</th>
+                                <th class="text-end">Reçu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in recent_payments %}
+                            <tr>
+                                <td>{{ payment.created_at|date:"d/m/Y H:i" }}</td>
+                                <td>{{ payment.reference|default:"-" }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ payment.get_method_display }}</span>
+                                </td>
+                                <td class="fw-bold text-success">{{ payment.amount|floatformat:0 }} FCFA</td>
+                                <td>{{ payment.balance_after|floatformat:0 }} FCFA</td>
+                                <td class="text-end">
+                                    <a href="{% url 'sales:payment_receipt' payment.id %}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-receipt"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <i class="fas fa-credit-card fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">Aucun paiement enregistré</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour enregistrer un paiement -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-credit-card me-2"></i>
+                    Enregistrer un paiement
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm" data-url-template="{% url 'sales:sale_record_payment' 0 %}">
+                    <div class="mb-3">
+                        <label class="form-label">Vente</label>
+                        <select class="form-select" id="paymentSaleSelect" {% if not has_unpaid_sales %}disabled{% endif %}>
+                            {% for sale in unpaid_sales %}
+                                <option value="{{ sale.id }}" data-remaining="{{ sale.remaining_amount }}">
+                                    {{ sale.invoice_number }} — reste {{ sale.remaining_amount|floatformat:0 }} FCFA
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if not has_unpaid_sales %}
+                            <small class="text-muted d-block mt-1">Aucune vente impayée.</small>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Montant</label>
+                        <div class="input-group">
+                            <span class="input-group-text">FCFA</span>
+                            <input type="number" class="form-control" id="clientPaymentAmount" required min="1" {% if not has_unpaid_sales %}disabled{% endif %}>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            Reste à payer: <span id="clientPaymentRemaining">0</span> FCFA
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mode de paiement</label>
+                        <select class="form-select" id="clientPaymentMethod" {% if not has_unpaid_sales %}disabled{% endif %}>
+                            <option value="cash">Espèces</option>
+                            <option value="mobile">Mobile Money</option>
+                            <option value="card">Carte bancaire</option>
+                            <option value="bank">Virement</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Référence</label>
+                        <input type="text" class="form-control" id="clientPaymentRef" placeholder="N° de transaction..." {% if not has_unpaid_sales %}disabled{% endif %}>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" form="paymentForm" class="btn btn-success" {% if not has_unpaid_sales %}disabled{% endif %}>
+                    <i class="fas fa-check-circle me-2"></i>Valider le paiement
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Graphique d'activité
+    const ctx = document.getElementById('purchaseChart').getContext('2d');
+    
+    // Données de l'exemple (à remplacer par des données réelles)
+    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'];
+    const purchaseData = [65000, 89000, 45000, 120000, 95000, 140000];
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [{
+                label: 'Montant des achats (FCFA)',
+                data: purchaseData,
+                borderColor: '#283593',
+                backgroundColor: 'rgba(40, 53, 147, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' FCFA';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+
+// Fonctions d'action
+function sendSMS() {
+    // Implémenter l'envoi de SMS
+    alert('Fonction d\'envoi de SMS à implémenter');
+}
+
+function viewHistory() {
+    // Voir tout l'historique
+    window.location.href = "#"; // Remplacer par l'URL de l'historique complet
+}
+
+function recordPayment() {
+    // Ouvrir le modal de paiement
+    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    const saleSelect = document.getElementById('paymentSaleSelect');
+    const amountInput = document.getElementById('clientPaymentAmount');
+    const remainingSpan = document.getElementById('clientPaymentRemaining');
+
+    if (saleSelect && saleSelect.value) {
+        const remaining = parseFloat(saleSelect.options[saleSelect.selectedIndex].dataset.remaining) || 0;
+        if (remainingSpan) {
+            remainingSpan.textContent = remaining.toLocaleString();
+        }
+        if (amountInput) {
+            amountInput.value = remaining > 0 ? remaining : '';
+            amountInput.max = remaining > 0 ? remaining : '';
+        }
+    }
+    modal.show();
+}
+
+// Soumission du paiement client (AJAX)
+document.getElementById('paymentForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const saleSelect = document.getElementById('paymentSaleSelect');
+    const amountInput = document.getElementById('clientPaymentAmount');
+    const methodSelect = document.getElementById('clientPaymentMethod');
+    const refInput = document.getElementById('clientPaymentRef');
+
+    if (!saleSelect || !saleSelect.value) {
+        alert('Veuillez sélectionner une vente.');
+        return;
+    }
+    const amount = parseFloat(amountInput?.value || '0');
+    if (!amount || amount <= 0) {
+        alert('Veuillez saisir un montant valide.');
+        return;
+    }
+
+    const urlTemplate = this.dataset.urlTemplate;
+    const url = urlTemplate.replace('/0/', `/${saleSelect.value}/`);
+
+    const csrftoken = (function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    })('csrftoken');
+
+    const payload = new URLSearchParams({
+        amount: amount,
+        method: methodSelect?.value || 'cash',
+        reference: refInput?.value || ''
+    });
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: payload.toString()
+    })
+    .then(async response => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) {
+            throw new Error(data.error || 'Erreur lors de l’enregistrement du paiement.');
+        }
+        bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+        window.location.reload();
+    })
+    .catch(err => {
+        alert(err.message);
+    });
+});
+
+// Mise à jour du reste à payer quand on change de vente
+document.getElementById('paymentSaleSelect')?.addEventListener('change', function() {
+    const remaining = parseFloat(this.options[this.selectedIndex].dataset.remaining) || 0;
+    const remainingSpan = document.getElementById('clientPaymentRemaining');
+    const amountInput = document.getElementById('clientPaymentAmount');
+    if (remainingSpan) {
+        remainingSpan.textContent = remaining.toLocaleString();
+    }
+    if (amountInput) {
+        amountInput.value = remaining > 0 ? remaining : '';
+        amountInput.max = remaining > 0 ? remaining : '';
+    }
+});
+
+// Raccourci clavier pour nouveau paiement
+document.addEventListener('keydown', function(e) {
+    // Ctrl+P pour nouveau paiement
+    if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        recordPayment();
+    }
+});
+</script>
+
+<style>
+.client-avatar {
+    width: 120px;
+    height: 120px;
+}
+
+.avatar-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-initials {
+    color: white;
+    font-size: 3rem;
+    font-weight: 600;
+}
+
+.info-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary-soft);
+}
+
+.bg-primary-soft {
+    background-color: var(--primary-soft);
+}
+
+.stat-card {
+    border: none;
+    border-radius: 10px;
+    transition: transform 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    animation: fadeIn 0.5s ease-out;
+}
+</style>
+{% endblock %}

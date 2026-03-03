@@ -1,0 +1,117 @@
+<!-- templates/includes/navbar.html -->
+<nav class="navbar px-3">
+    <div class="container-fluid d-flex align-items-center justify-content-between p-0">
+        <!-- Partie gauche : Toggle + Logo -->
+        <div class="d-flex align-items-center">
+            <button class="toggle-sidebar d-none d-md-flex me-3" id="toggleSidebar" type="button">
+                <i class="fas fa-bars"></i>
+            </button>
+            <button class="toggle-sidebar d-md-none me-2" id="mobileToggle" type="button">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <a class="navbar-brand d-flex align-items-center m-0" href="{% url 'accounts:home' %}">
+                <i class="fas fa-bolt me-2 text-primary"></i>
+                <span class="fw-bold">{{ shop_settings.name|default:"Diaby Electronic" }}</span>
+            </a>
+        </div>
+        
+        <!-- Partie droite : Menu utilisateur -->
+        <div class="user-menu">
+            {% if user.is_authenticated %}
+                <!-- Panier -->
+                <div class="dropdown">
+                    <button class="btn btn-light position-relative" type="button" id="cartButton" data-bs-toggle="dropdown" data-cart-summary-url="{% url 'products:cart_summary' %}" data-cart-checkout-url="{% url 'sales:cart_checkout' %}">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="cartCountBadge">0</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 260px;" id="cartDropdown">
+                        <li><span class="dropdown-item-text text-muted">Panier vide</span></li>
+                    </ul>
+                </div>
+
+                <!-- Notifications (optionnel) -->
+                <div class="dropdown">
+                    <button class="btn btn-light position-relative" type="button" data-bs-toggle="dropdown">
+                        <i class="far fa-bell"></i>
+                        {% if notifications_count %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ notifications_count }}
+                        </span>
+                        {% endif %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">Notifications</h6></li>
+                        {% if notifications %}
+                            {% for notif in notifications|slice:":5" %}
+                            <li><a class="dropdown-item" href="{{ notif.link }}">
+                                <small>{{ notif.message }}</small>
+                                <br>
+                                <small class="text-muted">{{ notif.created_at|timesince }}</small>
+                            </a></li>
+                            {% endfor %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-center" href="{% url 'notifications:all' %}">Voir tout</a></li>
+                        {% else %}
+                            <li><span class="dropdown-item text-muted">Aucune notification</span></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <!-- User menu -->
+                <div class="dropdown">
+                    <div class="user-avatar" data-bs-toggle="dropdown">
+                        {% if user.avatar %}
+                            <img src="{{ user.avatar.url }}" alt="{{ user.username }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                        {% else %}
+                            <i class="far fa-user-circle"></i>
+                        {% endif %}
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <div class="dropdown-header">
+                                <strong>{{ user.get_full_name|default:user.username }}</strong><br>
+                                <small class="text-muted">
+                                    {% if user.role == 'admin' %}
+                                        <span class="badge bg-primary">Administrateur</span>
+                                    {% elif user.role == 'manager' %}
+                                        <span class="badge bg-success">Gestionnaire</span>
+                                    {% elif user.role == 'seller' %}
+                                        <span class="badge bg-info">Vendeur</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ user.role }}</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">
+                            <i class="far fa-user me-2"></i>Mon Profil
+                        </a></li>
+                        <li><a class="dropdown-item" href="#">
+                            <i class="fas fa-cog me-2"></i>Paramètres
+                        </a></li>
+                        {% if user.role == 'admin' %}
+                        <li><a class="dropdown-item" href="#">
+                            <i class="fas fa-tools me-2"></i>Admin Django
+                        </a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            {% else %}
+                <a class="btn btn-primary" href="{% url 'accounts:login' %}">
+                    <i class="fas fa-sign-in-alt me-2"></i>Connexion
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</nav>

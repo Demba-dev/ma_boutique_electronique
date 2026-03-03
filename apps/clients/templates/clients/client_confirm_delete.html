@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h4>Confirmer la suppression</h4>
+        </div>
+
+        <div class="card-body">
+            <p>
+                Voulez-vous vraiment supprimer le client
+                <strong>{{ client.name }}</strong> ?
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    Oui, supprimer
+                </button>
+
+                <a href="{% url 'clients:client_list' %}"
+                   class="btn btn-secondary">
+                    Annuler
+                </a>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

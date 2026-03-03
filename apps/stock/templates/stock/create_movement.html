@@ -1,0 +1,543 @@
+<!-- templates/stock/stock_movement_form.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Modifier mouvement #{{ form.instance.reference }} - Diaby Electronic
+    {% else %}
+        Nouveau mouvement de stock - Diaby Electronic
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if form.instance.pk %}
+        <i class="fas fa-edit me-2"></i>Modifier le mouvement
+    {% else %}
+        <i class="fas fa-exchange-alt me-2"></i>Nouveau mouvement de stock
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'stock:movement_list' %}">Mouvements</a></li>
+    <li class="breadcrumb-item active">
+        {% if form.instance.pk %}Modification{% else %}Création{% endif %}
+    </li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{% url 'stock:movement_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <!-- Informations sur les règles de stock -->
+        <div class="alert alert-info bg-light border-0 d-flex align-items-center mb-4">
+            <i class="fas fa-info-circle fa-2x text-primary me-3"></i>
+            <div>
+                <strong>Règle de gestion :</strong> Toute modification de stock doit passer par ce formulaire. 
+                Les mouvements sont traçables et irréversibles.
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-white py-3">
+                <ul class="nav nav-tabs card-header-tabs" id="movementTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="simple-tab" data-bs-toggle="tab" data-bs-target="#simple" type="button" role="tab">
+                            <i class="fas fa-pencil-alt me-2"></i>Saisie simple
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="advanced-tab" data-bs-toggle="tab" data-bs-target="#advanced" type="button" role="tab">
+                            <i class="fas fa-cog me-2"></i>Saisie avancée
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body">
+                <div class="tab-content">
+                    <!-- Onglet Saisie simple -->
+                    <div class="tab-pane fade show active" id="simple" role="tabpanel">
+                        <form method="post" id="movementForm" novalidate>
+                            {% csrf_token %}
+                            
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">
+                                    {% for error in form.non_field_errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Produit avec recherche -->
+                            <div class="mb-4">
+                                <label for="{{ form.product.id_for_label }}" class="form-label fw-bold">
+                                    <i class="fas fa-box me-2 text-primary"></i>Produit
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <select name="{{ form.product.name }}" 
+                                            id="{{ form.product.id_for_label }}" 
+                                            class="form-select select2 {% if form.product.errors %}is-invalid{% endif %}"
+                                            required>
+                                        <option value="">Sélectionnez un produit...</option>
+                                        {% for product in form.product.field.queryset %}
+                                            <option value="{{ product.id }}" 
+                                                    data-stock="{{ product.stock_quantity }}"
+                                                    data-threshold="{{ product.low_stock_threshold }}"
+                                                    {% if form.product.value == product.id %}selected{% endif %}>
+                                                {{ product.name }} (Stock: {{ product.stock_quantity }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                {% if form.product.errors %}
+                                    <div class="invalid-feedback">{{ form.product.errors.0 }}</div>
+                                {% endif %}
+                                
+                                <!-- Affichage du stock actuel (dynamique) -->
+                                <div id="stockInfo" class="mt-2 small {% if not form.product.value %}d-none{% endif %}">
+                                    <div class="alert alert-light p-2 mb-0">
+                                        <div class="d-flex justify-content-between">
+                                            <span><i class="fas fa-boxes me-1"></i>Stock actuel:</span>
+                                            <span class="fw-bold" id="currentStock">0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mt-1">
+                                            <span><i class="fas fa-exclamation-triangle me-1"></i>Seuil d'alerte:</span>
+                                            <span class="fw-bold" id="thresholdStock">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Type de mouvement avec icônes -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-arrows-alt-h me-2 text-primary"></i>Type de mouvement
+                                </label>
+                                <div class="row g-2">
+                                    {% for choice in form.type.field.choices %}
+                                    {% if choice.0 %}
+                                        <div class="col-md-4">
+                                            <div class="type-option card {% if form.type.value == choice.0 %}border-primary selected{% endif %}">
+                                                <label class="card-body text-center p-3">
+                                                    <input type="radio" 
+                                                           name="{{ form.type.name }}" 
+                                                           value="{{ choice.0 }}"
+                                                           class="d-none"
+                                                           {% if form.type.value == choice.0 %}checked{% endif %}
+                                                           required>
+                                                    {% if choice.0 == 'IN' %}
+                                                        <i class="fas fa-arrow-down fa-2x fa-fw text-success mb-2"></i>
+                                                        <h6 class="mb-0">Entrée</h6>
+                                                        <small class="text-muted">Réception / Achat</small>
+                                                    {% elif choice.0 == 'OUT' %}
+                                                        <i class="fas fa-arrow-up fa-2x fa-fw text-danger mb-2"></i>
+                                                        <h6 class="mb-0">Sortie</h6>
+                                                        <small class="text-muted">Vente / Transfert</small>
+                                                    {% elif choice.0 == 'ADJUSTMENT' %}
+                                                        <i class="fas fa-balance-scale fa-2x fa-fw text-warning mb-2"></i>
+                                                        <h6 class="mb-0">Ajustement</h6>
+                                                        <small class="text-muted">Correction / Inventaire</small>
+                                                    {% endif %}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% if form.type.errors %}
+                                    <div class="text-danger mt-2">{{ form.type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Quantité -->
+                            <div class="mb-4">
+                                <label for="{{ form.quantity.id_for_label }}" class="form-label fw-bold">
+                                    <i class="fas fa-sort-numeric-up-alt me-2 text-primary"></i>Quantité
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-cubes"></i>
+                                    </span>
+                                    <input type="number" 
+                                           name="{{ form.quantity.name }}" 
+                                           id="{{ form.quantity.id_for_label }}" 
+                                           class="form-control form-control-lg {% if form.quantity.errors %}is-invalid{% endif %}"
+                                           value="{{ form.quantity.value|default:'1' }}"
+                                           min="1"
+                                           step="1"
+                                           required>
+                                    <span class="input-group-text bg-light">unités</span>
+                                </div>
+                                {% if form.quantity.errors %}
+                                    <div class="invalid-feedback">{{ form.quantity.errors.0 }}</div>
+                                {% else %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1 text-muted"></i>
+                                        <span id="quantityWarning" class="text-warning d-none">
+                                            Attention: Cette quantité dépasse le stock disponible!
+                                        </span>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Référence (avec suggestion automatique) -->
+                            <div class="mb-4">
+                                <label for="{{ form.reference.id_for_label }}" class="form-label fw-bold">
+                                    <i class="fas fa-hashtag me-2 text-primary"></i>Référence
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-tag"></i>
+                                    </span>
+                                    <input type="text" 
+                                           name="{{ form.reference.name }}" 
+                                           id="{{ form.reference.id_for_label }}" 
+                                           class="form-control {% if form.reference.errors %}is-invalid{% endif %}"
+                                           value="{{ form.reference.value|default:'' }}"
+                                           placeholder="Référence générée automatiquement"
+                                           readonly
+                                           required>
+                                    <button class="btn btn-outline-primary" type="button" id="generateRef">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                                {% if form.reference.errors %}
+                                    <div class="invalid-feedback">{{ form.reference.errors.0 }}</div>
+                                {% else %}
+                                    <div class="form-text">Numéro de facture, bon de commande ou référence interne</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Notes (optionnel) -->
+                            <div class="mb-4">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label fw-bold">
+                                    <i class="fas fa-sticky-note me-2 text-primary"></i>Notes (optionnel)
+                                </label>
+                                <textarea name="{{ form.notes.name }}" id="{{ form.notes.id_for_label }}" class="form-control" rows="2" placeholder="Informations complémentaires...">{{ form.notes.value|default:'' }}</textarea>
+                                {% if form.notes.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.notes.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Boutons d'action -->
+                            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                                <a href="{% url 'stock:movement_list' %}" class="btn btn-outline-secondary px-4">
+                                    <i class="fas fa-times me-2"></i>Annuler
+                                </a>
+                                <button type="submit" class="btn btn-primary px-5" id="submitBtn">
+                                    <i class="fas fa-save me-2"></i>
+                                    Enregistrer le mouvement
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Onglet Saisie avancée (pour plus tard) -->
+                    <div class="tab-pane fade" id="advanced" role="tabpanel">
+                        <div class="text-center py-5">
+                            <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+                            <h5>Fonctionnalités avancées</h5>
+                            <p class="text-muted">
+                                Import en masse, mouvements multiples, génération automatique<br>
+                                (Bientôt disponible)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historique des derniers mouvements du produit (si en modification) -->
+        {% if form.instance.pk %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2 text-primary"></i>
+                    Historique des mouvements de ce produit
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Quantité</th>
+                                <th>Référence</th>
+                                <th>Par</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{{ form.instance.created_at|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <span class="badge {% if form.instance.type == 'IN' %}bg-success
+                                                      {% elif form.instance.type == 'OUT' %}bg-danger
+                                                      {% else %}bg-warning{% endif %}">
+                                        {{ form.instance.get_type_display }}
+                                    </span>
+                                </td>
+                                <td>{{ form.instance.quantity }}</td>
+                                <td>{{ form.instance.reference }}</td>
+                                <td>{{ form.instance.created_by.username|default:"Inconnu" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Règles de gestion -->
+        <div class="card shadow mt-4 bg-light">
+            <div class="card-body">
+                <h6 class="mb-3">
+                    <i class="fas fa-shield-alt me-2 text-primary"></i>
+                    Règles de validation
+                </h6>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <small class="d-block">
+                            <i class="fas fa-check-circle text-success me-1"></i>
+                            Entrée: Augmente le stock
+                        </small>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="d-block">
+                            <i class="fas fa-check-circle text-success me-1"></i>
+                            Sortie: Diminue le stock
+                        </small>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="d-block">
+                            <i class="fas fa-check-circle text-success me-1"></i>
+                            Ajustement: Corrige le stock
+                        </small>
+                    </div>
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Chaque mouvement est enregistré avec la date, l'utilisateur et une référence unique.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Select2 pour la recherche de produits -->
+<link href="{% static 'css/select2.min.css' %}" rel="stylesheet" />
+<script src="{% static 'js/select2.min.js' %}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialisation de Select2
+    const productSelect = $('#{{ form.product.id_for_label }}');
+    if (productSelect.length) {
+        productSelect.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Rechercher un produit...',
+            allowClear: true
+        });
+        
+        // Mise à jour des infos de stock
+        productSelect.on('change', function() {
+            const selected = $(this).find(':selected');
+            const stock = selected.data('stock');
+            const threshold = selected.data('threshold');
+            
+            if (selected.val()) {
+                $('#currentStock').text(stock || 0);
+                $('#thresholdStock').text(threshold || 5);
+                $('#stockInfo').removeClass('d-none');
+                checkQuantity();
+            } else {
+                $('#stockInfo').addClass('d-none');
+            }
+        });
+        
+        // Trigger initial si valeur sélectionnée
+        if (productSelect.val()) {
+            productSelect.trigger('change');
+        }
+    }
+
+    // Gestion des options de type (radio cards)
+    const typeOptions = document.querySelectorAll('.type-option');
+    const typeRadios = document.querySelectorAll('input[name="{{ form.type.name }}"]');
+    
+    function updateTypeStyles() {
+        typeOptions.forEach(opt => {
+            const radio = opt.querySelector('input[type="radio"]');
+            if (radio && radio.checked) {
+                opt.classList.add('border-primary', 'selected', 'bg-primary-soft');
+            } else {
+                opt.classList.remove('border-primary', 'selected', 'bg-primary-soft');
+            }
+        });
+        checkQuantity();
+    }
+
+    typeRadios.forEach(radio => {
+        radio.addEventListener('change', updateTypeStyles);
+    });
+
+    // Permettre le clic sur la carte entière
+    typeOptions.forEach(option => {
+        option.addEventListener('click', function(e) {
+            const radio = this.querySelector('input[type="radio"]');
+            if (radio && e.target !== radio) {
+                radio.checked = true;
+                updateTypeStyles();
+            }
+        });
+    });
+
+    // Initialisation au chargement
+    updateTypeStyles();
+
+    // Vérification de la quantité par rapport au stock
+    const quantityInput = document.getElementById('{{ form.quantity.id_for_label }}');
+    const quantityWarning = document.getElementById('quantityWarning');
+    
+    function checkQuantity() {
+        const currentStock = parseInt($('#currentStock').text()) || 0;
+        const quantity = parseInt(quantityInput.value) || 0;
+        const type = document.querySelector('input[name="{{ form.type.name }}"]:checked');
+        
+        if (type && type.value === 'OUT' && quantity > currentStock) {
+            quantityWarning.classList.remove('d-none');
+        } else {
+            quantityWarning.classList.add('d-none');
+        }
+    }
+    
+    if (quantityInput) {
+        quantityInput.addEventListener('input', checkQuantity);
+    }
+    
+    document.querySelectorAll('input[name="{{ form.type.name }}"]').forEach(radio => {
+        radio.addEventListener('change', checkQuantity);
+    });
+
+    // Génération automatique de référence
+    const refInput = document.getElementById('{{ form.reference.id_for_label }}');
+    const generateRef = function() {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        
+        const ref = `MVT-${year}${month}${day}-${random}`;
+        if (refInput) {
+            refInput.value = ref;
+        }
+    };
+
+    document.getElementById('generateRef')?.addEventListener('click', generateRef);
+    if (refInput && !refInput.value) {
+        generateRef();
+    }
+
+    // Animation du bouton submit
+    const form = document.getElementById('movementForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (form) {
+        form.addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Traitement...';
+        });
+    }
+
+    // Confirmation pour les sorties importantes
+    if (form && !form.instance.pk) {
+        form.addEventListener('submit', function(e) {
+            const type = document.querySelector('input[name="{{ form.type.name }}"]:checked');
+            const quantity = parseInt(quantityInput.value) || 0;
+            const currentStock = parseInt($('#currentStock').text()) || 0;
+            
+            if (type && type.value === 'OUT' && quantity > currentStock / 2) {
+                if (!confirm('Attention: Cette sortie représente plus de la moitié du stock. Continuer ?')) {
+                    e.preventDefault();
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer le mouvement';
+                }
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.type-option {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.type-option .card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+}
+
+.type-option .card-body i {
+    line-height: 1;
+}
+
+.type-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.type-option.selected {
+    border-color: var(--primary);
+    background-color: var(--primary-soft);
+}
+
+.type-option input[type="radio"]:checked + label {
+    /* Style géré par JS */
+}
+
+/* Select2 custom */
+.select2-container--bootstrap-5 .select2-selection {
+    min-height: 38px;
+    border: 1px solid #dee2e6;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Badge pour les types */
+.type-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+}
+</style>
+{% endblock %}

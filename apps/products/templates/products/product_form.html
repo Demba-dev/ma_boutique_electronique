@@ -1,0 +1,598 @@
+<!-- templates/products/product_form.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Modifier {{ form.instance.name }} - Diaby Electronic
+    {% else %}
+        Nouveau Produit - Diaby Electronic
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if form.instance.pk %}
+        <i class="fas fa-edit me-2"></i>Modifier le produit
+    {% else %}
+        <i class="fas fa-plus-circle me-2"></i>Nouveau produit
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}">Produits</a></li>
+    <li class="breadcrumb-item active">
+        {% if form.instance.pk %}Modification{% else %}Création{% endif %}
+    </li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-white py-3">
+                <ul class="nav nav-tabs card-header-tabs" id="productTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">
+                            <i class="fas fa-info-circle me-2"></i>Informations générales
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock" type="button" role="tab">
+                            <i class="fas fa-boxes me-2"></i>Stock & Prix
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab">
+                            <i class="fas fa-image me-2"></i>Média
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="productForm" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Tab content -->
+                    <div class="tab-content" id="productTabsContent">
+                        <!-- Tab 1: Informations générales -->
+                        <div class="tab-pane fade show active" id="info" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-tag me-2 text-primary"></i>Nom du produit
+                                    </label>
+                                    <input type="text" 
+                                           name="{{ form.name.name }}" 
+                                           id="{{ form.name.id_for_label }}" 
+                                           class="form-control form-control-lg {% if form.name.errors %}is-invalid{% endif %}"
+                                           value="{{ form.name.value|default:'' }}"
+                                           placeholder="Nom du produit (ex: iPhone 13 Pro Max)"
+                                           required>
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.category.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-folder me-2 text-primary"></i>Catégorie
+                                    </label>
+                                    <select name="{{ form.category.name }}" 
+                                            id="{{ form.category.id_for_label }}" 
+                                            class="form-select {% if form.category.errors %}is-invalid{% endif %}"
+                                            required>
+                                        <option value="">Sélectionnez une catégorie...</option>
+                                        {% for category in form.category.field.queryset %}
+                                            <option value="{{ category.id }}" {% if form.category.value == category.id %}selected{% endif %}>
+                                                {{ category.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.category.errors %}
+                                        <div class="invalid-feedback">{{ form.category.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.supplier.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-truck me-2 text-primary"></i>Fournisseur
+                                    </label>
+                                    <select name="{{ form.supplier.name }}" 
+                                            id="{{ form.supplier.id_for_label }}" 
+                                            class="form-select {% if form.supplier.errors %}is-invalid{% endif %}">
+                                        <option value="">Sélectionnez un fournisseur...</option>
+                                        {% for supplier in form.supplier.field.queryset %}
+                                            <option value="{{ supplier.id }}" {% if form.supplier.value == supplier.id %}selected{% endif %}>
+                                                {{ supplier.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.supplier.errors %}
+                                        <div class="invalid-feedback">{{ form.supplier.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.brand.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-copyright me-2 text-primary"></i>Marque
+                                    </label>
+                                    <input type="text" 
+                                           name="{{ form.brand.name }}" 
+                                           id="{{ form.brand.id_for_label }}" 
+                                           class="form-control {% if form.brand.errors %}is-invalid{% endif %}"
+                                           value="{{ form.brand.value|default:'' }}"
+                                           placeholder="Ex: Apple, Samsung, Xiaomi...">
+                                    {% if form.brand.errors %}
+                                        <div class="invalid-feedback">{{ form.brand.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-align-left me-2 text-primary"></i>Description
+                                    </label>
+                                    <textarea name="{{ form.description.name }}" 
+                                              id="{{ form.description.id_for_label }}" 
+                                              class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                                              rows="4"
+                                              placeholder="Description détaillée du produit...">{{ form.description.value|default:'' }}</textarea>
+                                    {% if form.description.errors %}
+                                        <div class="invalid-feedback">{{ form.description.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               name="{{ form.has_imei.name }}" 
+                                               id="has_imei" 
+                                               {% if form.has_imei.value %}checked{% endif %}>
+                                        <label class="form-check-label" for="has_imei">
+                                            <i class="fas fa-qrcode me-1 text-primary"></i>
+                                            Produit avec IMEI/Numéro de série
+                                        </label>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        À cocher pour les téléphones et appareils électroniques
+                                    </small>
+                                </div>
+
+                                <div class="col-md-6 mb-3" id="imei_field" style="display: {% if form.has_imei.value %}block{% else %}none{% endif %};">
+                                    <label for="{{ form.imei.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-barcode me-2 text-primary"></i>Numéro IMEI / Série
+                                    </label>
+                                    <input type="text" 
+                                           name="{{ form.imei.name }}" 
+                                           id="{{ form.imei.id_for_label }}" 
+                                           class="form-control {% if form.imei.errors %}is-invalid{% endif %}"
+                                           value="{{ form.imei.value|default:'' }}"
+                                           placeholder="Entrez l'IMEI ou S/N">
+                                    {% if form.imei.errors %}
+                                        <div class="invalid-feedback">{{ form.imei.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Stock & Prix -->
+                        <div class="tab-pane fade" id="stock" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.purchase_price.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-shopping-cart me-2 text-success"></i>Prix d'achat (FCFA)
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">FCFA</span>
+                                        <input type="number" 
+                                               name="{{ form.purchase_price.name }}" 
+                                               id="{{ form.purchase_price.id_for_label }}" 
+                                               class="form-control {% if form.purchase_price.errors %}is-invalid{% endif %}"
+                                               value="{{ form.purchase_price.value|default:'' }}"
+                                               min="0"
+                                               step="100"
+                                               required>
+                                        {% if form.purchase_price.errors %}
+                                            <div class="invalid-feedback">{{ form.purchase_price.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.selling_price.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-tag me-2 text-warning"></i>Prix de vente (FCFA)
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">FCFA</span>
+                                        <input type="number" 
+                                               name="{{ form.selling_price.name }}" 
+                                               id="{{ form.selling_price.id_for_label }}" 
+                                               class="form-control {% if form.selling_price.errors %}is-invalid{% endif %}"
+                                               value="{{ form.selling_price.value|default:'' }}"
+                                               min="0"
+                                               step="100"
+                                               required>
+                                        {% if form.selling_price.errors %}
+                                            <div class="invalid-feedback">{{ form.selling_price.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.min_selling_price.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-hand-holding-usd me-2 text-danger"></i>Prix min. autorisé
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">FCFA</span>
+                                        <input type="number" 
+                                               name="{{ form.min_selling_price.name }}" 
+                                               id="{{ form.min_selling_price.id_for_label }}" 
+                                               class="form-control {% if form.min_selling_price.errors %}is-invalid{% endif %}"
+                                               value="{{ form.min_selling_price.value|default:'' }}"
+                                               min="0"
+                                               step="100">
+                                    </div>
+                                    <small class="text-muted">Prix plancher pour les remises</small>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="profit_margin" class="form-label fw-bold">
+                                        <i class="fas fa-chart-line me-2 text-info"></i>Marge bénéficiaire
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="text" 
+                                               class="form-control bg-light" 
+                                               id="profit_margin" 
+                                               readonly>
+                                        <span class="input-group-text bg-light">%</span>
+                                    </div>
+                                    <small class="text-muted">Calculé automatiquement</small>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.stock_quantity.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-boxes me-2 text-primary"></i>Quantité en stock
+                                    </label>
+                                    <input type="number" 
+                                           name="{{ form.stock_quantity.name }}" 
+                                           id="{{ form.stock_quantity.id_for_label }}" 
+                                           class="form-control {% if form.stock_quantity.errors %}is-invalid{% endif %}"
+                                           value="{{ form.stock_quantity.value|default:'0' }}"
+                                           min="0"
+                                           required>
+                                    {% if form.stock_quantity.errors %}
+                                        <div class="invalid-feedback">{{ form.stock_quantity.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.unit.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-balance-scale me-2 text-secondary"></i>Unité de mesure
+                                    </label>
+                                    <input type="text" 
+                                           name="{{ form.unit.name }}" 
+                                           id="{{ form.unit.id_for_label }}" 
+                                           class="form-control {% if form.unit.errors %}is-invalid{% endif %}"
+                                           value="{{ form.unit.value|default:'Pièce' }}"
+                                           placeholder="Ex: Pièce, Carton...">
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.low_stock_threshold.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>Seuil d'alerte stock
+                                    </label>
+                                    <input type="number" 
+                                           name="{{ form.low_stock_threshold.name }}" 
+                                           id="{{ form.low_stock_threshold.id_for_label }}" 
+                                           class="form-control {% if form.low_stock_threshold.errors %}is-invalid{% endif %}"
+                                           value="{{ form.low_stock_threshold.value|default:'5' }}"
+                                           min="1"
+                                           required>
+                                    {% if form.low_stock_threshold.errors %}
+                                        <div class="invalid-feedback">{{ form.low_stock_threshold.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                {% if form.instance.pk %}
+                                <div class="col-12 mt-3">
+                                    <div class="alert alert-info bg-light">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="d-block">
+                                                    <i class="fas fa-calendar-alt me-1"></i>
+                                                    Créé le: {{ form.instance.created_at|date:"d/m/Y H:i" }}
+                                                </small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="d-block">
+                                                    <i class="fas fa-edit me-1"></i>
+                                                    Dernière modification: {{ form.instance.updated_at|date:"d/m/Y H:i" }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Média -->
+                        <div class="tab-pane fade" id="media" role="tabpanel">
+                            <div class="row">
+                                <div class="col-12 mb-4">
+                                    <label for="{{ form.image.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-camera me-2 text-primary"></i>Image du produit
+                                    </label>
+                                    
+                                    <div class="image-upload-container text-center p-4 border rounded bg-light">
+                                        {% if form.instance.image %}
+                                            <div class="current-image mb-3" id="currentImageContainer">
+                                                <img src="{{ form.instance.image.url }}" 
+                                                     alt="{{ form.instance.name }}" 
+                                                     class="img-fluid rounded shadow-sm" 
+                                                     style="max-height: 200px;">
+                                                <p class="mt-2">
+                                                    <small class="text-muted">Image actuelle</small>
+                                                </p>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="upload-area" id="uploadArea">
+                                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                            <h6>Glissez une image ici ou cliquez pour parcourir</h6>
+                                            <input type="file" 
+                                                   name="{{ form.image.name }}" 
+                                                   id="{{ form.image.id_for_label }}" 
+                                                   class="form-control d-none" 
+                                                   accept="image/*">
+                                            <button type="button" class="btn btn-outline-primary mt-2" id="browseBtn">
+                                                <i class="fas fa-folder-open me-2"></i>Parcourir...
+                                            </button>
+                                        </div>
+                                        
+                                        <div id="imagePreview" class="mt-3 d-none">
+                                            <img src="" alt="Aperçu" class="img-fluid rounded shadow-sm" style="max-height: 150px;">
+                                        </div>
+                                        
+                                        {% if form.image.errors %}
+                                            <div class="text-danger mt-2">{{ form.image.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Boutons d'action -->
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <div>
+                            {% if form.instance.pk %}
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="fas fa-trash-alt me-2"></i>Supprimer
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary px-4">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5" id="submitBtn">
+                                <i class="fas {% if form.instance.pk %}fa-save{% else %}fa-plus-circle{% endif %} me-2"></i>
+                                {% if form.instance.pk %}Mettre à jour{% else %}Créer{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+{% if form.instance.pk %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmer la suppression
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer le produit <strong>"{{ product.name }}"</strong> ?</p>
+                <p class="text-danger mb-0">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    Cette action est irréversible.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="post" action="{% url 'products:product_delete' product.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i>Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calcul de la marge bénéficiaire
+    const purchasePrice = document.getElementById('{{ form.purchase_price.id_for_label }}');
+    const sellingPrice = document.getElementById('{{ form.selling_price.id_for_label }}');
+    const profitMargin = document.getElementById('profit_margin');
+    
+    function calculateMargin() {
+        const purchase = parseFloat(purchasePrice.value) || 0;
+        const selling = parseFloat(sellingPrice.value) || 0;
+        
+        if (purchase > 0 && selling > 0) {
+            const margin = ((selling - purchase) / selling * 100).toFixed(1);
+            profitMargin.value = margin;
+            
+            // Changer la couleur selon la marge
+            if (margin < 10) {
+                profitMargin.style.color = 'red';
+            } else if (margin < 20) {
+                profitMargin.style.color = 'orange';
+            } else {
+                profitMargin.style.color = 'green';
+            }
+        } else {
+            profitMargin.value = '';
+        }
+    }
+    
+    if (purchasePrice && sellingPrice) {
+        purchasePrice.addEventListener('input', calculateMargin);
+        sellingPrice.addEventListener('input', calculateMargin);
+        calculateMargin(); // Calcul initial
+    }
+    
+    // Gestion de l'upload d'image
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('{{ form.image.id_for_label }}');
+    const browseBtn = document.getElementById('browseBtn');
+    const imagePreview = document.getElementById('imagePreview');
+    const currentImageContainer = document.getElementById('currentImageContainer');
+    
+    if (browseBtn) {
+        browseBtn.addEventListener('click', function() {
+            fileInput.click();
+        });
+    }
+    
+    if (uploadArea) {
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('bg-primary-soft');
+        });
+        
+        uploadArea.addEventListener('dragleave', function() {
+            this.classList.remove('bg-primary-soft');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('bg-primary-soft');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                fileInput.files = files;
+                previewImage(files[0]);
+            }
+        });
+    }
+    
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                previewImage(this.files[0]);
+            }
+        });
+    }
+    
+    function previewImage(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = imagePreview.querySelector('img');
+            img.src = e.target.result;
+            imagePreview.classList.remove('d-none');
+            if (currentImageContainer) {
+                currentImageContainer.classList.add('d-none');
+            }
+        }
+        reader.readAsDataURL(file);
+    }
+    
+    // Gestion du champ IMEI (montrer/cacher selon le checkbox)
+    const hasImeiCheckbox = document.getElementById('has_imei');
+    const imeiField = document.getElementById('imei_field');
+    
+    if (hasImeiCheckbox && imeiField) {
+        hasImeiCheckbox.addEventListener('change', function() {
+            imeiField.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    
+    // Confirmation avant soumission
+    const form = document.getElementById('productForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (form) {
+        form.addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Traitement...';
+        });
+    }
+});
+</script>
+
+<style>
+.image-upload-container {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.image-upload-container:hover {
+    border-color: var(--primary) !important;
+    background-color: var(--primary-soft) !important;
+}
+
+.bg-primary-soft {
+    background-color: var(--primary-soft);
+}
+
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link:hover {
+    border: none;
+    color: var(--primary);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary);
+    border: none;
+    border-bottom: 3px solid var(--primary);
+    background: transparent;
+}
+
+/* Animation pour les onglets */
+.tab-pane {
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}

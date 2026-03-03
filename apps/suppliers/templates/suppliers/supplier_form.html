@@ -1,0 +1,374 @@
+<!-- templates/suppliers/supplier_form.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Modifier {{ form.instance.name }} - Diaby Electronic
+    {% else %}
+        Nouveau Fournisseur - Diaby Electronic
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if form.instance.pk %}
+        <i class="fas fa-edit me-2"></i>Modifier le fournisseur
+    {% else %}
+        <i class="fas fa-user-plus me-2"></i>Nouveau fournisseur
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'suppliers:supplier_list' %}">Fournisseurs</a></li>
+    <li class="breadcrumb-item active">
+        {% if form.instance.pk %}Modification{% else %}Création{% endif %}
+    </li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{% url 'suppliers:supplier_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-truck me-2 text-primary"></i>
+                    {% if form.instance.pk %}
+                        Informations du fournisseur "{{ form.instance.name }}"
+                    {% else %}
+                        Informations du nouveau fournisseur
+                    {% endif %}
+                </h5>
+            </div>
+            
+            <div class="card-body">
+                <form method="post" id="supplierForm" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <!-- Nom du contact -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-user me-2 text-primary"></i>Nom du contact
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                                <input type="text" 
+                                       name="{{ form.name.name }}" 
+                                       id="{{ form.name.id_for_label }}" 
+                                       class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                                       value="{{ form.name.value|default:'' }}"
+                                       placeholder="Ex: Mamadou Diallo"
+                                       required>
+                            </div>
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
+                            {% else %}
+                                <div class="form-text">Nom de la personne à contacter chez le fournisseur</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Nom de l'entreprise -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.company_name.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-building me-2 text-primary"></i>Nom de l'entreprise
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-building"></i>
+                                </span>
+                                <input type="text" 
+                                       name="{{ form.company_name.name }}" 
+                                       id="{{ form.company_name.id_for_label }}" 
+                                       class="form-control {% if form.company_name.errors %}is-invalid{% endif %}"
+                                       value="{{ form.company_name.value|default:'' }}"
+                                       placeholder="Ex: Diaby Distribution SARL">
+                            </div>
+                            {% if form.company_name.errors %}
+                                <div class="invalid-feedback">{{ form.company_name.errors.0 }}</div>
+                            {% else %}
+                                <div class="form-text">Optionnel - Laissez vide si identique au nom du contact</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Téléphone -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-phone me-2 text-primary"></i>Téléphone
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-phone"></i>
+                                </span>
+                                <input type="tel" 
+                                       name="{{ form.phone.name }}" 
+                                       id="{{ form.phone.id_for_label }}" 
+                                       class="form-control {% if form.phone.errors %}is-invalid{% endif %}"
+                                       value="{{ form.phone.value|default:'' }}"
+                                       placeholder="Ex: 77 123 45 67"
+                                       required>
+                            </div>
+                            {% if form.phone.errors %}
+                                <div class="invalid-feedback">{{ form.phone.errors.0 }}</div>
+                            {% else %}
+                                <div class="form-text">Numéro de téléphone principal</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-envelope me-2 text-primary"></i>Email
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                <input type="email" 
+                                       name="{{ form.email.name }}" 
+                                       id="{{ form.email.id_for_label }}" 
+                                       class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                                       value="{{ form.email.value|default:'' }}"
+                                       placeholder="Ex: contact@diaby-distribution.com">
+                            </div>
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback">{{ form.email.errors.0 }}</div>
+                            {% else %}
+                                <div class="form-text">Optionnel - Adresse email professionnelle</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Adresse -->
+                        <div class="col-12 mb-3">
+                            <label for="{{ form.address.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-map-marker-alt me-2 text-primary"></i>Adresse
+                            </label>
+                            <textarea name="{{ form.address.name }}" 
+                                      id="{{ form.address.id_for_label }}" 
+                                      class="form-control {% if form.address.errors %}is-invalid{% endif %}"
+                                      rows="3"
+                                      placeholder="Adresse complète...">{{ form.address.value|default:'' }}</textarea>
+                            {% if form.address.errors %}
+                                <div class="invalid-feedback">{{ form.address.errors.0 }}</div>
+                            {% else %}
+                                <div class="form-text">Optionnel - Adresse physique ou géographique</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Section Informations supplémentaires (optionnelle) -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card bg-light border-0">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-clipboard-list me-2 text-primary"></i>
+                                        Informations complémentaires
+                                    </h6>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="{{ form.country.id_for_label }}" class="form-label fw-bold">
+                                                    <i class="fas fa-globe me-2 text-primary"></i>Pays
+                                                </label>
+                                                <input type="text"
+                                                       name="{{ form.country.name }}"
+                                                       id="{{ form.country.id_for_label }}"
+                                                       class="form-control {% if form.country.errors %}is-invalid{% endif %}"
+                                                       value="{{ form.country.value|default:'' }}"
+                                                       placeholder="Ex: Sénégal">
+                                                {% if form.country.errors %}
+                                                    <div class="invalid-feedback">{{ form.country.errors.0 }}</div>
+                                                {% else %}
+                                                    <div class="form-text">Optionnel</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="{{ form.balance.id_for_label }}" class="form-label fw-bold">
+                                                    <i class="fas fa-wallet me-2 text-primary"></i>Solde
+                                                </label>
+                                                <div class="input-group">
+                                                    <input type="number"
+                                                           name="{{ form.balance.name }}"
+                                                           id="{{ form.balance.id_for_label }}"
+                                                           class="form-control {% if form.balance.errors %}is-invalid{% endif %}"
+                                                           value="{{ form.balance.value|default:'0.00' }}"
+                                                           step="0.01">
+                                                    <span class="input-group-text">FCFA</span>
+                                                </div>
+                                                {% if form.balance.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.balance.errors.0 }}</div>
+                                                {% else %}
+                                                    <div class="form-text">Solde actuel du fournisseur</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               name="{{ form.is_active.name }}"
+                                               id="{{ form.is_active.id_for_label }}"
+                                               {% if form.is_active.value %}checked{% endif %}>
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Fournisseur actif</label>
+                                    </div>
+                                    {% if form.is_active.errors %}
+                                        <div class="text-danger small mt-1">{{ form.is_active.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="text-muted d-block mt-1">
+                                        Les fournisseurs inactifs n'apparaîtront pas dans les listes de sélection
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if form.instance.pk %}
+                    <!-- Date de création (visible seulement en modification) -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-info bg-light border-0 py-2">
+                                <div class="d-flex justify-content-between">
+                                    <small>
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        Créé le: {{ form.instance.created_at|date:"d/m/Y à H:i" }}
+                                    </small>
+                                    <small>
+                                        <i class="fas fa-box me-1"></i>
+                                        {{ form.instance.products.count }} produit(s) associé(s)
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Boutons d'action -->
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <div>
+                            {% if form.instance.pk %}
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="fas fa-trash-alt me-2"></i>Supprimer
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'suppliers:supplier_list' %}" class="btn btn-outline-secondary px-4">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5" id="submitBtn">
+                                <i class="fas {% if form.instance.pk %}fa-save{% else %}fa-plus-circle{% endif %} me-2"></i>
+                                {% if form.instance.pk %}Mettre à jour{% else %}Enregistrer{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+{% if form.instance.pk %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmer la suppression
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer le fournisseur <strong>"{{ supplier.name }}"</strong> ?</p>
+                
+                {% if supplier.company_name %}
+                <p>Entreprise: <strong>{{ supplier.company_name }}</strong></p>
+                {% endif %}
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Cette action est irréversible et pourrait affecter l'historique des commandes.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="post" action="{% url 'suppliers:supplier_delete' supplier.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i>Supprimer définitivement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('supplierForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Validation du numéro de téléphone (optionnel)
+    const phoneInput = document.getElementById('{{ form.phone.id_for_label }}');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            // Ne garder que les chiffres
+            this.value = this.value.replace(/[^0-9+]/g, '');
+        });
+    }
+    
+    // Confirmation avant soumission si modification
+    {% if form.instance.pk %}
+    form.addEventListener('submit', function(e) {
+        if (!confirm('Êtes-vous sûr de vouloir modifier ce fournisseur ?')) {
+            e.preventDefault();
+        }
+    });
+    {% endif %}
+    
+    // Animation du bouton submit
+    form.addEventListener('submit', function() {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Traitement...';
+    });
+    
+    // Copier le nom du contact dans le nom de l'entreprise si vide
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    const companyInput = document.getElementById('{{ form.company_name.id_for_label }}');
+    
+    if (nameInput && companyInput) {
+        nameInput.addEventListener('blur', function() {
+            if (!companyInput.value && this.value) {
+                if (confirm('Utiliser le nom du contact comme nom d\'entreprise ?')) {
+                    companyInput.value = this.value;
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

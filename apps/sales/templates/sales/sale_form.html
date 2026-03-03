@@ -1,0 +1,620 @@
+<!-- templates/sales/sale_form.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Modifier vente #{{ form.instance.invoice_number }} - Diaby Electronic
+    {% else %}
+        Nouvelle vente - Diaby Electronic
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if form.instance.pk %}
+        <i class="fas fa-edit me-2"></i>Modifier la vente
+    {% else %}
+        <i class="fas fa-cash-register me-2"></i>Nouvelle vente
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'sales:sale_list' %}">Ventes</a></li>
+    <li class="breadcrumb-item active">
+        {% if form.instance.pk %}Modification{% else %}Nouvelle vente{% endif %}
+    </li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{% url 'sales:sale_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4">
+    <form method="post" id="saleForm" novalidate>
+        {% csrf_token %}
+        <div class="row justify-content-center">
+            <div class="col-xxl-10">
+                <!-- Section 1: Informations de la vente -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header text-white py-3" style="background-color: #1a237e;">
+                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>1. Informations de la vente</h6>
+                    </div>
+                    <div class="card-body">
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="fas fa-user me-2 text-primary"></i>Client</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-user"></i></span>
+                                    <select name="client" id="{{ form.client.id_for_label }}" class="form-select select2">
+                                        <option value="">Sélectionnez un client...</option>
+                                        {% for client in form.client.field.queryset %}
+                                            <option value="{{ client.id }}" data-balance="{{ client.balance }}"
+                                                {% if form.client.value|stringformat:"s" == client.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ client.name }} - {{ client.phone }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div id="clientBalanceInfo" class="form-text text-info d-none">
+                                    Solde client: <span id="clientBalance">0</span> FCFA
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="fas fa-money-bill-wave me-2 text-primary"></i>Montant payé</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">FCFA</span>
+                                    {{ form.amount_paid }}
+                                </div>
+                                <div class="form-text">Laissez 0 pour une vente à crédit</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Produits vendus -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header text-white py-3 d-flex justify-content-between align-items-center" style="background-color: #1a237e;">
+                        <h6 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>2. Produits vendus</h6>
+                        <button type="button" class="btn btn-light btn-sm fw-bold" id="addProductBtn">
+                            <i class="fas fa-plus-circle me-1"></i>Ajouter un produit
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if formset.non_form_errors %}
+                            <div class="alert alert-danger m-3">
+                                {% for error in formset.non_form_errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="table-responsive">
+                            {{ formset.management_form }}
+                            <table class="table table-hover align-middle mb-0" id="productsTable">
+                                <thead class="bg-light text-muted small text-uppercase">
+                                    <tr>
+                                        <th style="width: 45%; padding-left: 1.5rem;">Produit</th>
+                                        <th style="width: 15%; text-align: center;">Quantité</th>
+                                        <th style="width: 20%; text-align: right;">Prix Unit. (FCFA)</th>
+                                        <th style="width: 20%; padding-right: 1.5rem;" class="text-end">Sous-total</th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productRows">
+                                    {% for item_form in formset %}
+                                    <tr class="product-row" id="row-{{ forloop.counter0 }}">
+                                        <td style="padding-left: 1.5rem;">
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-primary me-2">{{ forloop.counter }}</span>
+                                                <div class="flex-grow-1">
+                                                    {{ item_form.product }}
+                                                    <small class="text-muted stock-hint d-block mt-1"></small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">{{ item_form.quantity }}</td>
+                                        <td class="text-end">{{ item_form.price }}</td>
+                                        <td class="text-end" style="padding-right: 1.5rem;">
+                                            <span class="subtotal-display fw-bold text-dark">0</span>
+                                            <input type="hidden" class="subtotal-field" value="0">
+                                        </td>
+                                        <td class="text-end pe-3">
+                                            <button type="button" class="btn btn-link text-danger p-0 remove-product" title="Supprimer">
+                                                <i class="fas fa-times-circle fa-lg"></i>
+                                            </button>
+                                            <div class="d-none">
+                                                {{ item_form.DELETE }}
+                                                {{ item_form.id }}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="bg-light fw-bold">
+                                    <tr>
+                                        <td colspan="3" class="text-end">TOTAL GÉNÉRAL :</td>
+                                        <td class="text-end text-primary fs-5" style="padding-right: 1.5rem;">
+                                            <span id="grandTotalDisplay">0</span> FCFA
+                                            <input type="hidden" id="grandTotal" value="0">
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Finalisation -->
+                <div class="card shadow-sm border-0 mb-5">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="row text-center text-md-start">
+                                    <div class="col-4 border-end">
+                                        <div class="text-muted small text-uppercase">Total</div>
+                                        <div class="h5 mb-0 fw-bold" id="recapTotal">0 FCFA</div>
+                                    </div>
+                                    <div class="col-4 border-end text-success">
+                                        <div class="text-muted small text-uppercase">Payé</div>
+                                        <div class="h5 mb-0 fw-bold" id="recapPaid">0 FCFA</div>
+                                    </div>
+                                    <div class="col-4 text-danger">
+                                        <div class="text-muted small text-uppercase">Reste</div>
+                                        <div class="h5 mb-0 fw-bold" id="recapRemaining">0 FCFA</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 small text-info d-none" id="newBalanceContainer">
+                                    Nouveau solde client : <span class="fw-bold" id="newBalance">0 FCFA</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end mt-3 mt-md-0">
+                                <a href="{% url 'sales:sale_list' %}" class="btn btn-outline-secondary me-3">Annuler</a>
+                                <button type="submit" class="btn btn-success px-4 fw-bold" id="submitBtn">
+                                    <i class="fas fa-check-circle me-2"></i>Finaliser la vente
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template pour nouvelle ligne (caché) -->
+        <div id="empty-form-template" class="d-none">
+            <table>
+                <tr class="product-row">
+                    <td style="padding-left: 1.5rem;">
+                        <div class="d-flex align-items-center">
+                            <div class="row-index me-2 text-muted fw-bold small" style="width: 20px;">#</div>
+                            <div class="flex-grow-1">
+                                {{ formset.empty_form.product }}
+                                <small class="text-muted stock-hint d-block mt-1"></small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ formset.empty_form.quantity }}</td>
+                    <td>{{ formset.empty_form.price }}</td>
+                    <td class="text-end" style="padding-right: 1.5rem;">
+                        <span class="subtotal-display fw-bold text-dark">0</span>
+                        <input type="hidden" class="subtotal-field" value="0">
+                    </td>
+                    <td class="text-end pe-3">
+                        <button type="button" class="btn btn-link text-danger p-0 remove-product">
+                            <i class="fas fa-times-circle fa-lg"></i>
+                        </button>
+                        <div class="d-none">
+                            {{ formset.empty_form.DELETE }}
+                            {{ formset.empty_form.id }}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </form>
+</div>
+
+<!-- Modal nouveau client -->
+<div class="modal fade" id="newClientModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Nouveau client
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quickClientForm">
+                    <div class="mb-3">
+                        <label class="form-label">Nom complet</label>
+                        <input type="text" class="form-control" id="newClientName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Téléphone</label>
+                        <input type="tel" class="form-control" id="newClientPhone" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="createClient()">
+                    <i class="fas fa-save me-2"></i>Créer le client
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Select2 -->
+<link rel="stylesheet" href="{% static 'css/select2.min.css' %}" />
+<link rel="stylesheet" href="{% static 'css/select2-bootstrap-5-theme.min.css' %}" />
+<script src="{% static 'js/select2.min.js' %}"></script>
+
+<!-- Données des produits pour le JS -->
+<script id="products-data" type="application/json">
+{
+    {% for product in formset.0.product.field.queryset %}
+    "{{ product.id }}": {
+        "price": {{ product.selling_price|default:0|stringformat:".2f" }},
+        "stock": {{ product.stock_quantity|default:0 }}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Parser les données produits
+    const productsData = JSON.parse(document.getElementById('products-data').textContent);
+    
+    // Initialisation Select2 sur le client et les produits existants
+    $('.select2').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Rechercher...',
+        allowClear: true
+    });
+    
+    $('.product-select').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Rechercher un produit...',
+        allowClear: true
+    });
+    
+    function applyProductData(row, productId, forcePrice = false) {
+        const product = productsData[productId];
+        if (!product || !row) return;
+
+        const priceInput = row.querySelector('.price-input');
+        if (priceInput) {
+            const currentPrice = parseFloat(priceInput.value) || 0;
+            if (forcePrice || currentPrice === 0) {
+                priceInput.value = product.price;
+            }
+        }
+
+        const quantityInput = row.querySelector('.quantity-input');
+        const stockHint = row.querySelector('.stock-hint');
+        if (quantityInput) {
+            quantityInput.max = product.stock;
+            if (stockHint) {
+                stockHint.textContent = `Stock: ${product.stock}`;
+            }
+            const warning = row.querySelector('.stock-warning');
+            if (warning) {
+                if (parseInt(quantityInput.value || '0') > parseInt(product.stock || 0)) {
+                    warning.textContent = `Stock maximum: ${product.stock}`;
+                    warning.classList.remove('d-none');
+                } else {
+                    warning.classList.add('d-none');
+                }
+            }
+        }
+    }
+
+    // Mise à jour des totaux
+    function updateTotals() {
+        let grandTotal = 0;
+        
+        document.querySelectorAll('.product-row').forEach(row => {
+            const rowId = row.id.split('-')[1];
+            const quantity = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
+            const price = parseFloat(row.querySelector('.price-input')?.value) || 0;
+            const subtotal = quantity * price;
+            
+            // Mise à jour du sous-total (visuel et champ caché)
+            const display = row.querySelector('.subtotal-display');
+            const field = row.querySelector('.subtotal-field');
+            if (display) display.textContent = subtotal.toLocaleString();
+            if (field) field.value = subtotal;
+            
+            grandTotal += subtotal;
+        });
+        
+        // Mise à jour des affichages
+        const grandTotalDisplay = document.getElementById('grandTotalDisplay');
+        const grandTotalField = document.getElementById('grandTotal');
+        
+        if (grandTotalDisplay) grandTotalDisplay.textContent = grandTotal.toLocaleString();
+        if (grandTotalField) grandTotalField.value = grandTotal;
+        
+        const recapTotal = document.getElementById('recapTotal');
+        if (recapTotal) recapTotal.textContent = grandTotal.toLocaleString() + ' FCFA';
+        
+        const amountPaid = parseFloat(document.getElementById('{{ form.amount_paid.id_for_label }}').value) || 0;
+        document.getElementById('recapPaid').textContent = amountPaid.toLocaleString() + ' FCFA';
+        
+        const remaining = grandTotal - amountPaid;
+        document.getElementById('recapRemaining').textContent = remaining.toLocaleString() + ' FCFA';
+        
+        // Calcul du nouveau solde client
+        const clientSelect = document.getElementById('{{ form.client.id_for_label }}');
+        const balanceContainer = document.getElementById('newBalanceContainer');
+        if (clientSelect && clientSelect.value) {
+            const selectedOption = clientSelect.options[clientSelect.selectedIndex];
+            const currentBalance = parseFloat(selectedOption.dataset.balance) || 0;
+            const newBalance = currentBalance + remaining;
+            const newBalanceSpan = document.getElementById('newBalance');
+            if (newBalanceSpan) newBalanceSpan.textContent = newBalance.toLocaleString() + ' FCFA';
+            if (balanceContainer) balanceContainer.classList.remove('d-none');
+        } else if (balanceContainer) {
+            balanceContainer.classList.add('d-none');
+        }
+    }
+    
+    // Gestion des produits
+    function addProductRow() {
+        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+        const currentCount = parseInt(totalForms.value);
+        
+        // On récupère le template vide généré par Django
+        const template = document.querySelector('#empty-form-template tr').outerHTML;
+        
+        // On remplace le placeholder __prefix__ par l'index actuel
+        const newRowHtml = template.replace(/__prefix__/g, currentCount);
+        
+        // On insère dans le tableau
+        const tbody = document.getElementById('productRows');
+        tbody.insertAdjacentHTML('beforeend', newRowHtml);
+        
+        const newRow = tbody.lastElementChild;
+        newRow.id = `row-${currentCount}`;
+        newRow.querySelector('.badge').textContent = currentCount + 1;
+        
+        // Incrémenter TOTAL_FORMS pour Django
+        totalForms.value = currentCount + 1;
+        
+        // Initialiser Select2 sur le nouveau select
+        $(newRow.querySelector('.product-select')).select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        });
+        
+        updateTotals();
+    }
+    
+    document.getElementById('addProductBtn').addEventListener('click', addProductRow);
+    
+    // Fonction pour ré-indexer tous les formulaires après une suppression
+    function reIndexRows() {
+        const rows = document.querySelectorAll('#productRows .product-row');
+        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+        
+        rows.forEach((row, index) => {
+            row.id = `row-${index}`;
+            row.querySelector('.badge').textContent = index + 1;
+            
+            // Mise à jour de tous les attributs name et id des champs dans la ligne
+            row.querySelectorAll('input, select, textarea').forEach(input => {
+                if (input.name) {
+                    input.name = input.name.replace(/items-\d+-/g, `items-${index}-`);
+                }
+                if (input.id) {
+                    input.id = input.id.replace(/id_items-\d+-/g, `id_items-${index}-`);
+                }
+            });
+        });
+        
+        totalForms.value = rows.length;
+    }
+
+    // Suppression de produit avec ré-indexation
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-product')) {
+            const btn = e.target.closest('.remove-product');
+            const row = btn.closest('.product-row');
+            
+            if (document.querySelectorAll('#productRows .product-row').length > 1) {
+                row.remove();
+                reIndexRows(); // Crucial pour que Django reçoive tous les produits
+                updateTotals();
+            } else {
+                alert('Une vente doit comporter au moins un produit.');
+            }
+        }
+    });
+    
+    // Événements de mise à jour
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('.quantity-input') || e.target.matches('.price-input') || e.target.matches('#{{ form.amount_paid.id_for_label }}')) {
+            updateTotals();
+        }
+    });
+    
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('.product-select')) {
+            const row = e.target.closest('.product-row');
+            const productId = e.target.value;
+            applyProductData(row, productId, true);
+            updateTotals();
+        }
+    });
+    
+    // Sélection client
+    document.getElementById('{{ form.client.id_for_label }}').addEventListener('change', function() {
+        const balanceInfo = document.getElementById('clientBalanceInfo');
+        const balanceSpan = document.getElementById('clientBalance');
+        
+        if (this.value) {
+            const selectedOption = this.options[this.selectedIndex];
+            const balance = selectedOption.dataset.balance || '0';
+            balanceSpan.textContent = parseFloat(balance).toLocaleString();
+            balanceInfo.classList.remove('d-none');
+        } else {
+            balanceInfo.classList.add('d-none');
+        }
+        updateTotals();
+    });
+    
+    // Création rapide client
+    window.createClient = function() {
+        const nameInput = document.getElementById('newClientName');
+        const phoneInput = document.getElementById('newClientPhone');
+        const name = nameInput.value;
+        const phone = phoneInput.value;
+        
+        if (!name || !phone) {
+            alert('Veuillez remplir tous les champs');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('phone', phone);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        fetch("{% url 'clients:client_quick_create' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Ajouter le nouveau client au Select2
+                const newOption = new Option(`${data.name} - ${data.phone}`, data.id, true, true);
+                $(newOption).attr('data-balance', data.balance);
+                $('#{{ form.client.id_for_label }}').append(newOption).trigger('change');
+                
+                // Fermer le modal
+                bootstrap.Modal.getInstance(document.getElementById('newClientModal')).hide();
+                
+                // Réinitialiser le formulaire
+                document.getElementById('quickClientForm').reset();
+                
+                // Notifier l'utilisateur
+                // Vous pouvez ajouter une notification toast ici
+            } else {
+                alert('Erreur: ' + (data.error || 'Une erreur est survenue'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur réseau est survenue');
+        });
+    };
+    
+    // Scan code-barres (simulation)
+    window.scanBarcode = function() {
+        alert('Fonction de scan à implémenter');
+    };
+    
+    // Grille des prix
+    window.showPriceList = function() {
+        alert('Affichage de la grille des prix');
+    };
+    
+    // Précharger prix/stock si un produit est déjà sélectionné
+    document.querySelectorAll('.product-select').forEach(select => {
+        if (select.value) {
+            applyProductData(select.closest('.product-row'), select.value, false);
+        }
+    });
+
+    // Initialisation des totaux
+    updateTotals();
+});
+</script>
+
+<style>
+.product-row {
+    transition: background-color 0.3s;
+}
+
+.product-row:hover {
+    background-color: #f8f9fa;
+}
+
+.select2-container--bootstrap-5 .select2-selection {
+    min-height: 38px;
+}
+
+.stock-warning {
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+.sale-card {
+    border: none;
+    overflow: hidden;
+}
+
+.sale-header {
+    background: linear-gradient(135deg, #1a237e, #3949ab);
+    border-bottom: none;
+}
+
+.sale-body {
+    background: #fff;
+}
+
+.sale-meta {
+    background: #f8f9fb;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #eef1f5;
+}
+
+.btn-add-product {
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-weight: 600;
+}
+
+.recap-card {
+    border: 1px solid #e8eef7;
+}
+
+.side-card {
+    border: none;
+}
+
+/* Animation */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.product-row {
+    animation: slideIn 0.3s ease-out;
+}
+</style>
+{% endblock %}

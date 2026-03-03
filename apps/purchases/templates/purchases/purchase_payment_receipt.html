@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reçu de paiement achat #{{ payment.id }} - {{ shop_settings.name|default:"Diaby Electronic" }}</title>
+    <style>
+        @page { size: A4; margin: 1cm; }
+        @media print {
+            body { background: white !important; margin: 0 !important; }
+            .print-actions { display: none !important; }
+            .receipt { box-shadow: none !important; border: none !important; }
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f5f6f8;
+            color: #1f2d3d;
+            margin: 0;
+            padding: 20px;
+        }
+        .receipt {
+            max-width: 820px;
+            margin: 0 auto;
+            background: #fff;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+        }
+        .header {
+            background: #1a237e;
+            color: #fff;
+            padding: 18px 24px;
+        }
+        .header h1 {
+            margin: 0 0 6px;
+            font-size: 22px;
+            letter-spacing: 1px;
+        }
+        .section {
+            padding: 18px 24px;
+            border-top: 1px solid #eef1f4;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6c757d;
+            margin-bottom: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 24px;
+        }
+        .label { color: #6c757d; font-size: 12px; text-transform: uppercase; }
+        .value { font-weight: 600; margin-top: 4px; }
+        .amount {
+            font-family: monospace;
+            font-size: 16px;
+        }
+        .summary {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dashed #e1e5ea;
+        }
+        .summary-row:last-child { border-bottom: none; }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #e8f0ff;
+            color: #1a237e;
+        }
+        .print-actions {
+            max-width: 820px;
+            margin: 0 auto 12px;
+            text-align: right;
+        }
+        .btn {
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background: #1a237e;
+            color: #fff;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: #fff;
+            margin-right: 8px;
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-actions">
+        <button class="btn btn-secondary" onclick="window.close()">Fermer</button>
+        <button class="btn btn-primary" onclick="window.print()">Imprimer</button>
+    </div>
+
+    <div class="receipt">
+        <div class="header">
+            <h1>{{ shop_settings.name|default:"Diaby Electronic"|upper }}</h1>
+            <div>Reçu de paiement fournisseur</div>
+            <small>Réf paiement: #{{ payment.id }}</small>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Informations paiement</div>
+            <div class="grid">
+                <div>
+                    <div class="label">Date</div>
+                    <div class="value">
+                        {% if payment.payment_date %}
+                            {{ payment.payment_date|date:"d/m/Y" }}
+                        {% else %}
+                            {{ payment.created_at|date:"d/m/Y H:i" }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <div class="label">Mode</div>
+                    <div class="value"><span class="badge">{{ payment.get_method_display }}</span></div>
+                </div>
+                <div>
+                    <div class="label">Montant</div>
+                    <div class="value amount">{{ payment.amount|floatformat:0 }} FCFA</div>
+                </div>
+                <div>
+                    <div class="label">Référence</div>
+                    <div class="value">{{ payment.reference|default:"-" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Achat associé</div>
+            <div class="grid">
+                <div>
+                    <div class="label">Référence achat</div>
+                    <div class="value">{{ purchase.reference|default:purchase.id }}</div>
+                </div>
+                <div>
+                    <div class="label">Fournisseur</div>
+                    <div class="value">{{ purchase.supplier.name|default:"Fournisseur inconnu" }}</div>
+                </div>
+                <div>
+                    <div class="label">Total achat</div>
+                    <div class="value amount">{{ purchase.total_amount|floatformat:0 }} FCFA</div>
+                </div>
+                <div>
+                    <div class="label">Enregistré par</div>
+                    <div class="value">{{ payment.created_by.get_full_name|default:payment.created_by.username }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Récapitulatif</div>
+            <div class="summary">
+                <div class="summary-row">
+                    <span>Total payé à ce jour</span>
+                    <span class="amount">{{ total_paid_to_payment|floatformat:0 }} FCFA</span>
+                </div>
+                <div class="summary-row">
+                    <span>Reste à payer</span>
+                    <span class="amount">{{ remaining_after|floatformat:0 }} FCFA</span>
+                </div>
+                {% if payment.balance_after is not None %}
+                <div class="summary-row">
+                    <span>Solde fournisseur après paiement</span>
+                    <span class="amount">{{ payment.balance_after|floatformat:0 }} FCFA</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if payment.notes %}
+        <div class="section">
+            <div class="section-title">Notes</div>
+            <div>{{ payment.notes }}</div>
+        </div>
+        {% endif %}
+
+        <div class="section">
+            <small>Document généré le {% now "d/m/Y H:i:s" %}</small>
+        </div>
+    </div>
+</body>
+</html>

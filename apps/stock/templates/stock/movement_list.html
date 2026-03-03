@@ -1,0 +1,579 @@
+<!-- templates/stock/movement_list.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Historique des mouvements - Diaby Electronic{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-history me-2"></i>Historique des mouvements de stock
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{% url 'stock:create_movement' %}" class="btn btn-primary">
+        <i class="fas fa-plus-circle me-2"></i>Nouveau mouvement
+    </a>
+{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="#">Stock</a></li>
+    <li class="breadcrumb-item active">Mouvements</li>
+{% endblock %}
+
+{% block content %}
+<!-- Filtres et recherche -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="input-group">
+            <span class="input-group-text bg-white">
+                <i class="fas fa-search text-primary"></i>
+            </span>
+            <input type="text" class="form-control" id="searchMovement" placeholder="Rechercher par produit, référence...">
+            
+            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-filter me-2"></i>Filtres
+            </button>
+            <ul class="dropdown-menu p-3" style="min-width: 300px;">
+                <li>
+                    <h6 class="dropdown-header">Type de mouvement</h6>
+                    <div class="px-3">
+                        <div class="form-check">
+                            <input class="form-check-input filter-type" type="checkbox" value="IN" id="filterIn">
+                            <label class="form-check-label" for="filterIn">
+                                <span class="badge bg-success">Entrées</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input filter-type" type="checkbox" value="OUT" id="filterOut">
+                            <label class="form-check-label" for="filterOut">
+                                <span class="badge bg-danger">Sorties</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input filter-type" type="checkbox" value="ADJUSTMENT" id="filterAdjust">
+                            <label class="form-check-label" for="filterAdjust">
+                                <span class="badge bg-warning">Ajustements</span>
+                            </label>
+                        </div>
+                    </div>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <h6 class="dropdown-header">Période</h6>
+                    <div class="px-3">
+                        <select class="form-select form-select-sm mb-2" id="periodFilter">
+                            <option value="">Toutes les dates</option>
+                            <option value="today">Aujourd'hui</option>
+                            <option value="week">Cette semaine</option>
+                            <option value="month">Ce mois</option>
+                            <option value="year">Cette année</option>
+                        </select>
+                    </div>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <div class="px-3 d-flex gap-2">
+                        <button class="btn btn-sm btn-primary flex-grow-1" id="applyFilters">Appliquer</button>
+                        <button class="btn btn-sm btn-outline-secondary" id="resetFilters">Réinitialiser</button>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="d-flex gap-2 justify-content-end">
+            <button class="btn btn-outline-success" id="exportExcelBtn" title="Exporter en Excel">
+                <i class="fas fa-file-excel me-2"></i>Excel
+            </button>
+            <button class="btn btn-outline-danger" id="exportPdfBtn" title="Exporter en PDF">
+                <i class="fas fa-file-pdf me-2"></i>PDF
+            </button>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-chart-bar me-2"></i>Vue
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" id="viewTable"><i class="fas fa-table me-2"></i>Tableau</a></li>
+                    <li><a class="dropdown-item" href="#" id="viewCards"><i class="fas fa-th-large me-2"></i>Cartes</a></li>
+                    <li><a class="dropdown-item" href="#" id="viewStats"><i class="fas fa-chart-pie me-2"></i>Statistiques</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques rapides (vue stats) -->
+<div id="statsView" class="row mb-4 d-none">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h6 class="card-title">Total entrées</h6>
+                <h3 class="mb-0">{{ total_in|default:0 }}</h3>
+                <small>unités</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h6 class="card-title">Total sorties</h6>
+                <h3 class="mb-0">{{ total_out|default:0 }}</h3>
+                <small>unités</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h6 class="card-title">Ajustements</h6>
+                <h3 class="mb-0">{{ total_adjust|default:0 }}</h3>
+                <small>opérations</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-title">Mouvements</h6>
+                <h3 class="mb-0">{{ movements|length }}</h3>
+                <small>au total</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vue Tableau -->
+<div id="tableView">
+    <div class="card shadow">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="fas fa-list me-2 text-primary"></i>
+                Liste des mouvements
+            </h6>
+            <span class="badge bg-primary">{{ movements|length }} mouvement(s)</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="movementsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Produit</th>
+                            <th>Type</th>
+                            <th>Quantité</th>
+                            <th>Référence</th>
+                            <th>Créé par</th>
+                            <th>Stock avant/après</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movement in movements %}
+                        <tr class="movement-row" 
+                            data-type="{{ movement.type }}"
+                            data-date="{{ movement.created_at|date:'Y-m-d' }}"
+                            data-product="{{ movement.product.name|lower }}"
+                            data-reference="{{ movement.reference|lower }}">
+                            
+                            <td>
+                                <div>{{ movement.created_at|date:"d/m/Y" }}</div>
+                                <small class="text-muted">{{ movement.created_at|date:"H:i" }}</small>
+                            </td>
+                            
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if movement.product.image %}
+                                        <img src="{{ movement.product.image.url }}" 
+                                             alt="{{ movement.product.name }}"
+                                             style="width: 40px; height: 40px; object-fit: cover;"
+                                             class="rounded me-2">
+                                    {% else %}
+                                        <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-box text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ movement.product.name }}</strong>
+                                        {% if movement.product.brand %}
+                                            <br><small class="text-muted">{{ movement.product.brand }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <td>
+                                {% if movement.type == 'IN' %}
+                                    <span class="badge bg-success px-3 py-2">
+                                        <i class="fas fa-arrow-down me-1"></i>Entrée
+                                    </span>
+                                {% elif movement.type == 'OUT' %}
+                                    <span class="badge bg-danger px-3 py-2">
+                                        <i class="fas fa-arrow-up me-1"></i>Sortie
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark px-3 py-2">
+                                        <i class="fas fa-balance-scale me-1"></i>Ajustement
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <td>
+                                <span class="fw-bold {% if movement.type == 'IN' %}text-success{% elif movement.type == 'OUT' %}text-danger{% endif %}">
+                                    {% if movement.type == 'IN' %}+{% elif movement.type == 'OUT' %}-{% endif %}
+                                    {{ movement.quantity }}
+                                </span>
+                            </td>
+                            
+                            <td>
+                                <span class="badge bg-light text-dark font-monospace">
+                                    {{ movement.reference|default:"---" }}
+                                </span>
+                            </td>
+                            
+                            <td>
+                                <i class="fas fa-user-circle me-1 text-muted"></i>
+                                {{ movement.created_by.get_full_name|default:movement.created_by.username|default:"Inconnu" }}
+                            </td>
+                            
+                            <td>
+                                <small class="text-muted">
+                                    <span class="text-success">+{{ movement.quantity }}</span>
+                                </small>
+                            </td>
+                            
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            onclick="viewMovementDetails({{ movement.id }})"
+                                            title="Détails">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                            onclick="printMovement({{ movement.id }})"
+                                            title="Imprimer">
+                                        <i class="fas fa-print"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                                <h5>Aucun mouvement de stock</h5>
+                                <p class="text-muted">Commencez par créer votre premier mouvement</p>
+                                <a href="{% url 'stock:create_movement' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus-circle me-2"></i>Nouveau mouvement
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if movements.has_other_pages %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if movements.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ movements.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for i in movements.paginator.page_range %}
+                        <li class="page-item {% if movements.number == i %}active{% endif %}">
+                            <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                        </li>
+                    {% endfor %}
+                    
+                    {% if movements.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ movements.next_page_number }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Vue Cartes -->
+<div id="cardsView" class="row g-4 d-none">
+    {% for movement in movements %}
+    <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="card movement-card h-100 shadow-sm">
+            <div class="card-header py-2 
+                {% if movement.type == 'IN' %}bg-success text-white
+                {% elif movement.type == 'OUT' %}bg-danger text-white
+                {% else %}bg-warning{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small>{{ movement.created_at|date:"d/m/Y H:i" }}</small>
+                    <span class="badge bg-light">{{ movement.get_type_display }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <h6 class="card-title">{{ movement.product.name|truncatechars:30 }}</h6>
+                <div class="movement-info mt-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Quantité:</span>
+                        <span class="fw-bold {% if movement.type == 'IN' %}text-success{% elif movement.type == 'OUT' %}text-danger{% endif %}">
+                            {{ movement.quantity }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Référence:</span>
+                        <span class="font-monospace">{{ movement.reference|default:"---" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Par:</span>
+                        <span>{{ movement.created_by.username }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white">
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-sm btn-outline-info" onclick="viewMovementDetails({{ movement.id }})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="printMovement({{ movement.id }})">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal des détails du mouvement -->
+<div class="modal fade" id="movementModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Détails du mouvement
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="movementDetails">
+                <!-- Chargé dynamiquement -->
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Changer entre les vues
+    const tableView = document.getElementById('tableView');
+    const cardsView = document.getElementById('cardsView');
+    const statsView = document.getElementById('statsView');
+    
+    document.getElementById('viewTable').addEventListener('click', function(e) {
+        e.preventDefault();
+        tableView.classList.remove('d-none');
+        cardsView.classList.add('d-none');
+        statsView.classList.add('d-none');
+    });
+    
+    document.getElementById('viewCards').addEventListener('click', function(e) {
+        e.preventDefault();
+        tableView.classList.add('d-none');
+        cardsView.classList.remove('d-none');
+        statsView.classList.add('d-none');
+    });
+    
+    document.getElementById('viewStats').addEventListener('click', function(e) {
+        e.preventDefault();
+        tableView.classList.add('d-none');
+        cardsView.classList.add('d-none');
+        statsView.classList.remove('d-none');
+    });
+
+    // Recherche en temps réel
+    const searchInput = document.getElementById('searchMovement');
+    const tableRows = document.querySelectorAll('#movementsTable tbody tr');
+    const cards = document.querySelectorAll('.movement-card');
+    
+    function filterMovements(searchTerm) {
+        searchTerm = searchTerm.toLowerCase();
+        
+        // Filtrer tableau
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+        
+        // Filtrer cartes
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            card.closest('.col-xl-3').style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            filterMovements(this.value);
+        });
+    }
+
+    // Filtres avancés
+    document.getElementById('applyFilters').addEventListener('click', function() {
+        const selectedTypes = [];
+        document.querySelectorAll('.filter-type:checked').forEach(cb => {
+            selectedTypes.push(cb.value);
+        });
+        
+        const period = document.getElementById('periodFilter').value;
+        const today = new Date().toISOString().split('T')[0];
+        
+        tableRows.forEach(row => {
+            let show = true;
+            const type = row.dataset.type;
+            
+            // Filtre par type
+            if (selectedTypes.length > 0 && !selectedTypes.includes(type)) {
+                show = false;
+            }
+            
+            // Filtre par période (à implémenter selon vos besoins)
+            
+            row.style.display = show ? '' : 'none';
+        });
+        
+        // Fermer le dropdown
+        bootstrap.Dropdown.getInstance(document.querySelector('.dropdown-toggle')).hide();
+    });
+    
+    document.getElementById('resetFilters').addEventListener('click', function() {
+        document.querySelectorAll('.filter-type').forEach(cb => cb.checked = false);
+        document.getElementById('periodFilter').value = '';
+        tableRows.forEach(row => row.style.display = '');
+    });
+
+    // Export Excel (simulé)
+    document.getElementById('exportExcelBtn').addEventListener('click', function() {
+        alert('Export Excel en cours de développement...');
+    });
+    
+    // Export PDF (simulé)
+    document.getElementById('exportPdfBtn').addEventListener('click', function() {
+        alert('Export PDF en cours de développement...');
+    });
+});
+
+// Voir les détails d'un mouvement
+function viewMovementDetails(movementId) {
+    const modal = new bootstrap.Modal(document.getElementById('movementModal'));
+    const detailsDiv = document.getElementById('movementDetails');
+    
+    // Afficher le spinner
+    detailsDiv.innerHTML = `
+        <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+            <p class="mt-2 text-muted">Chargement des détails...</p>
+        </div>
+    `;
+    
+    modal.show();
+
+    // Utilisation de l'URL Django
+    const url = "{% url 'stock:movement_ajax_detail' 0 %}".replace('0', movementId);
+
+    // Appel AJAX
+    fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error('Erreur réseau');
+            return response.text();
+        })
+        .then(html => {
+            detailsDiv.innerHTML = html;
+        })
+        .catch(error => {
+            detailsDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Erreur lors du chargement: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// Imprimer un mouvement
+function printMovement(movementId) {
+    const url = "{% url 'stock:movement_print' 0 %}".replace('0', movementId);
+    window.open(url, '_blank');
+}
+
+// Raccourcis clavier
+document.addEventListener('keydown', function(e) {
+    // Ctrl+F pour focus recherche
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        document.getElementById('searchMovement').focus();
+    }
+    // Ctrl+N pour nouveau mouvement
+    if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        window.location.href = "{% url 'stock:create_movement' %}";
+    }
+});
+</script>
+
+<style>
+.movement-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: none;
+    overflow: hidden;
+}
+
+.movement-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 25px rgba(0,0,0,0.1) !important;
+}
+
+.movement-card .card-header {
+    border-bottom: none;
+}
+
+/* Animation pour les nouvelles lignes */
+@keyframes highlight {
+    from { background-color: #fff3cd; }
+    to { background-color: transparent; }
+}
+
+.movement-row {
+    animation: highlight 2s;
+}
+
+/* Badges personnalisés */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+    
+    .btn-group .btn {
+        padding: 0.25rem 0.5rem;
+    }
+}
+</style>
+{% endblock %}

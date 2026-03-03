@@ -1,0 +1,391 @@
+<!-- templates/clients/client_form.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Modifier {{ form.instance.name }} - Diaby Electronic
+    {% else %}
+        Nouveau client - Diaby Electronic
+    {% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if form.instance.pk %}
+        <i class="fas fa-edit me-2"></i>Modifier le client
+    {% else %}
+        <i class="fas fa-user-plus me-2"></i>Nouveau client
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'clients:client_list' %}">Clients</a></li>
+    <li class="breadcrumb-item active">
+        {% if form.instance.pk %}Modification{% else %}Création{% endif %}
+    </li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{% url 'clients:client_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-white py-3">
+                <ul class="nav nav-tabs card-header-tabs" id="clientTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">
+                            <i class="fas fa-info-circle me-2"></i>Informations personnelles
+                        </button>
+                    </li>
+                    {% if form.instance.pk %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+                            <i class="fas fa-history me-2"></i>Historique
+                        </button>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="card-body">
+                <form method="post" id="clientForm" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="tab-content">
+                        <!-- Onglet Informations personnelles -->
+                        <div class="tab-pane fade show active" id="info" role="tabpanel">
+                            <div class="row">
+                                <!-- Nom complet -->
+                                <div class="col-md-12 mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-user me-2 text-primary"></i>Nom complet
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">
+                                            <i class="fas fa-user"></i>
+                                        </span>
+                                        {{ form.name }}
+                                    </div>
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Téléphone -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.phone.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-phone me-2 text-primary"></i>Téléphone
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">
+                                            <i class="fas fa-phone"></i>
+                                        </span>
+                                        {{ form.phone }}
+                                    </div>
+                                    {% if form.phone.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.phone.errors.0 }}</div>
+                                    {% else %}
+                                        <div class="form-text">
+                                            Numéro principal pour les SMS de confirmation
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Email (optionnel) -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-envelope me-2 text-primary"></i>Email
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">
+                                            <i class="fas fa-envelope"></i>
+                                        </span>
+                                        {{ form.email }}
+                                    </div>
+                                    {% if form.email.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
+                                    {% else %}
+                                        <div class="form-text">Optionnel - Pour l'envoi de factures</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Adresse -->
+                                <div class="col-12 mb-3">
+                                    <label for="{{ form.address.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-map-marker-alt me-2 text-primary"></i>Adresse
+                                    </label>
+                                    {{ form.address }}
+                                    {% if form.address.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.address.errors.0 }}</div>
+                                    {% else %}
+                                        <div class="form-text">Optionnel - Adresse de livraison ou facturation</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Informations Commerciales (Déplacées ici pour centralisation) -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.client_type.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-tag me-2 text-primary"></i>Type de client
+                                    </label>
+                                    {{ form.client_type }}
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.credit_limit.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-chart-line me-2 text-primary"></i>Plafond de crédit
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">FCFA</span>
+                                        {{ form.credit_limit }}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.balance.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-coins me-2 text-primary"></i>Solde / Crédit
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">FCFA</span>
+                                        {{ form.balance }}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.loyalty_level.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-star me-2 text-primary"></i>Niveau de fidélité
+                                    </label>
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1 me-2">
+                                            {{ form.loyalty_level }}
+                                        </div>
+                                        <span class="badge bg-primary" id="loyaltyValue">{{ form.loyalty_level.value|default:0 }}/5</span>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            <i class="fas fa-check-circle text-success me-1"></i>
+                                            Client actif
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Onglet Historique (si modification) -->
+                        {% if form.instance.pk %}
+                        <div class="tab-pane fade" id="history" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card bg-light border-0 mb-3">
+                                        <div class="card-body text-center">
+                                            <h3 class="text-primary">{{ total_purchases|default:"0" }}</h3>
+                                            <p class="mb-0">Achats totaux</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card bg-light border-0 mb-3">
+                                        <div class="card-body text-center">
+                                            <h3 class="text-success">{{ total_spent|default:"0" }} FCFA</h3>
+                                            <p class="mb-0">Montant total dépensé</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Dernier achat: {{ last_purchase_date|default:"Aucun achat" }}
+                                    </div>
+                                    
+                                    <div class="list-group">
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <small class="text-muted">Client depuis</small>
+                                                    <p class="mb-0">{{ form.instance.created_at|date:"d F Y" }}</p>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted">Dernière modification</small>
+                                                    <p class="mb-0">{{ form.instance.updated_at|date:"d/m/Y H:i" }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Boutons d'action -->
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <div>
+                            {% if form.instance.pk %}
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="fas fa-trash-alt me-2"></i>Supprimer
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'clients:client_list' %}" class="btn btn-outline-secondary px-4">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5" id="submitBtn">
+                                <i class="fas {% if form.instance.pk %}fa-save{% else %}fa-plus-circle{% endif %} me-2"></i>
+                                {% if form.instance.pk %}Mettre à jour{% else %}Enregistrer{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+{% if form.instance.pk %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmer la suppression
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer le client <strong>"{{ form.instance.name }}"</strong> ?</p>
+                
+                {% if total_purchases > 0 %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Ce client a effectué {{ total_purchases }} achat(s). La suppression affectera l'historique des ventes.
+                </div>
+                {% endif %}
+                
+                <p class="text-danger mb-0">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    Cette action est irréversible.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="post" action="{% url 'clients:client_delete' form.instance.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i>Supprimer définitivement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('clientForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Formatage du téléphone
+    const phoneInput = document.getElementById('{{ form.phone.id_for_label }}');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            // Ne garder que les chiffres
+            let value = this.value.replace(/[^0-9+]/g, '');
+            // Limiter à 15 caractères
+            if (value.length > 15) {
+                value = value.slice(0, 15);
+            }
+            this.value = value;
+        });
+    }
+    
+    // Mise à jour du niveau de fidélité
+    const loyaltyRange = document.querySelector('input[type="range"]');
+    const loyaltyValue = document.getElementById('loyaltyValue');
+    
+    if (loyaltyRange && loyaltyValue) {
+        loyaltyRange.addEventListener('input', function() {
+            const stars = '★'.repeat(this.value) + '☆'.repeat(5 - this.value);
+            loyaltyValue.innerHTML = `${this.value}/5 (${stars})`;
+        });
+    }
+    
+    // Animation du bouton submit
+    if (form) {
+        form.addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Traitement...';
+        });
+    }
+    
+    // Confirmation pour modification de solde important
+    const balanceInput = document.getElementById('{{ form.balance.id_for_label }}');
+    if (balanceInput && {{ form.instance.pk|default:'0' }} > 0) {
+        balanceInput.addEventListener('change', function() {
+            const oldValue = {{ form.instance.balance|default:'0' }};
+            const newValue = parseFloat(this.value) || 0;
+            
+            if (Math.abs(newValue - oldValue) > 100000) {
+                if (!confirm('Attention: Vous êtes sur le point de modifier le solde de plus de 100 000 FCFA. Continuer ?')) {
+                    this.value = oldValue;
+                }
+            }
+        });
+    }
+});
+</script>
+
+<style>
+/* Style pour les onglets */
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link:hover {
+    border: none;
+    color: var(--primary);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary);
+    border: none;
+    border-bottom: 3px solid var(--primary);
+    background: transparent;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.tab-pane {
+    animation: fadeIn 0.5s ease-out;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,645 @@
+<!-- templates/sales/sale_list.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gestion des ventes - Diaby Electronic{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-shopping-cart me-2"></i>Gestion des ventes
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{% url 'sales:sale_create' %}" class="btn btn-success">
+        <i class="fas fa-plus-circle me-2"></i>Nouvelle vente
+    </a>
+{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item active">Ventes</li>
+{% endblock %}
+
+{% block content %}
+<!-- Filtres et recherche -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="input-group">
+            <span class="input-group-text bg-white">
+                <i class="fas fa-search text-primary"></i>
+            </span>
+            <input type="text" class="form-control" id="searchSale" placeholder="Rechercher par client, ID, vendeur...">
+            
+            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-filter me-2"></i>Filtres
+            </button>
+            <ul class="dropdown-menu p-3" style="min-width: 300px;">
+                <li>
+                    <h6 class="dropdown-header">Statut de paiement</h6>
+                    <div class="px-3">
+                        <div class="form-check">
+                            <input class="form-check-input filter-status" type="checkbox" value="paid" id="filterPaid">
+                            <label class="form-check-label text-success" for="filterPaid">
+                                <i class="fas fa-check-circle me-1"></i>Payées
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input filter-status" type="checkbox" value="partial" id="filterPartial">
+                            <label class="form-check-label text-warning" for="filterPartial">
+                                <i class="fas fa-clock me-1"></i>Paiement partiel
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input filter-status" type="checkbox" value="unpaid" id="filterUnpaid">
+                            <label class="form-check-label text-danger" for="filterUnpaid">
+                                <i class="fas fa-times-circle me-1"></i>Impayées
+                            </label>
+                        </div>
+                    </div>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <h6 class="dropdown-header">Période</h6>
+                    <div class="px-3">
+                        <select class="form-select form-select-sm mb-2" id="periodFilter">
+                            <option value="">Toutes les dates</option>
+                            <option value="today">Aujourd'hui</option>
+                            <option value="yesterday">Hier</option>
+                            <option value="week">Cette semaine</option>
+                            <option value="month">Ce mois</option>
+                            <option value="year">Cette année</option>
+                        </select>
+                    </div>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <div class="px-3 d-flex gap-2">
+                        <button class="btn btn-sm btn-primary flex-grow-1" id="applyFilters">
+                            <i class="fas fa-check me-1"></i>Appliquer
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="resetFilters">
+                            <i class="fas fa-undo me-1"></i>Reset
+                        </button>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="d-flex gap-2 justify-content-end">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary active" id="tableView">
+                    <i class="fas fa-table"></i>
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="cardView">
+                    <i class="fas fa-th-large"></i>
+                </button>
+            </div>
+            <button class="btn btn-outline-success" id="exportBtn" title="Exporter">
+                <i class="fas fa-file-excel me-2"></i>Export
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Total ventes</h6>
+                        <h3 class="mb-0">{{ sales.count }}</h3>
+                    </div>
+                    <i class="fas fa-shopping-cart fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Chiffre d'affaires</h6>
+                        <h3 class="mb-0">{{ total_revenue|floatformat:0 }} FCFA</h3>
+                    </div>
+                    <i class="fas fa-chart-line fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Créances</h6>
+                        <h3 class="mb-0">{{ total_credit|floatformat:0 }} FCFA</h3>
+                    </div>
+                    <i class="fas fa-clock fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">Ventes aujourd'hui</h6>
+                        <h3 class="mb-0">{{ today_sales }}</h3>
+                    </div>
+                    <i class="fas fa-calendar-day fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vue Tableau -->
+<div id="tableViewContainer">
+    <div class="card shadow">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-list me-2 text-primary"></i>
+                    Liste des ventes
+                </h6>
+                <span class="badge bg-primary">{{ sales.count }} vente(s)</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="salesTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>N°</th>
+                            <th>Client</th>
+                            <th>Total</th>
+                            <th>Payé</th>
+                            <th>Reste</th>
+                            <th>Statut</th>
+                            <th>Vendeur</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr class="sale-row" 
+                            data-sale-id="{{ sale.id }}"
+                            data-remaining="{{ sale.remaining_amount }}"
+                            data-total="{{ sale.total_amount }}"
+                            data-paid="{{ sale.amount_paid }}"
+                            data-status="{% if sale.remaining_amount == 0 %}paid{% elif sale.amount_paid > 0 %}partial{% else %}unpaid{% endif %}"
+                            data-date="{{ sale.created_at|date:'Y-m-d' }}">
+                            <td>
+                                <span class="fw-bold">#{{ sale.id }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
+                                    <div>
+                                        <strong>{{ sale.client.name|default:"Client inconnu" }}</strong>
+                                        {% if sale.client.phone %}
+                                            <br><small class="text-muted">{{ sale.client.phone }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="fw-bold">{{ sale.total_amount|floatformat:0 }} FCFA</td>
+                            <td class="text-success">{{ sale.amount_paid|floatformat:0 }} FCFA</td>
+                            <td>
+                                <span class="fw-bold {% if sale.remaining_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ sale.remaining_amount|floatformat:0 }} FCFA
+                                </span>
+                            </td>
+                            <td>
+                                {% if sale.remaining_amount == 0 %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i>Payée
+                                    </span>
+                                {% elif sale.amount_paid > 0 %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-clock me-1"></i>Partielle
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times-circle me-1"></i>Impayée
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <i class="fas fa-user me-1 text-muted"></i>
+                                {{ sale.created_by.get_full_name|default:sale.created_by.username }}
+                            </td>
+                            <td>
+                                <div>{{ sale.created_at|date:"d/m/Y" }}</div>
+                                <small class="text-muted">{{ sale.created_at|date:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'sales:sale_detail' sale.id %}" class="btn btn-sm btn-outline-info" title="Détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'sales:sale_receipt' sale.id %}" class="btn btn-sm btn-outline-primary" title="Reçu" target="_blank">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-success" title="Paiement" onclick="recordPayment({{ sale.id }})">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                                <h5>Aucune vente enregistrée</h5>
+                                <p class="text-muted">Commencez par créer votre première vente</p>
+                                <a href="{% url 'sales:sale_create' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus-circle me-2"></i>Nouvelle vente
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if sales.has_other_pages %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if sales.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ sales.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for i in sales.paginator.page_range %}
+                        <li class="page-item {% if sales.number == i %}active{% endif %}">
+                            <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                        </li>
+                    {% endfor %}
+                    
+                    {% if sales.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ sales.next_page_number }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Vue Cartes -->
+<div id="cardViewContainer" class="row g-4 d-none">
+    {% for sale in sales %}
+    <div class="col-xl-4 col-lg-6">
+        <div class="card sale-card h-100 shadow-sm">
+            <div class="card-header py-2 
+                {% if sale.remaining_amount == 0 %}bg-success text-white
+                {% elif sale.amount_paid > 0 %}bg-warning
+                {% else %}bg-danger text-white{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">#{{ sale.id }}</span>
+                    <span class="small">{{ sale.created_at|date:"d/m/Y H:i" }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
+                    <div>
+                        <h6 class="mb-0">{{ sale.client.name|default:"Client inconnu" }}</h6>
+                        <small class="text-muted">{{ sale.client.phone|default:"-" }}</small>
+                    </div>
+                </div>
+                
+                <div class="sale-info">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Total:</span>
+                        <span class="fw-bold">{{ sale.total_amount|floatformat:0 }} FCFA</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Payé:</span>
+                        <span class="text-success">{{ sale.amount_paid|floatformat:0 }} FCFA</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Reste:</span>
+                        <span class="fw-bold {% if sale.remaining_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ sale.remaining_amount|floatformat:0 }} FCFA
+                        </span>
+                    </div>
+                    
+                    <div class="progress mb-2" style="height: 5px;">
+                        <div class="progress-bar bg-success" 
+                             style="width: {% widthratio sale.amount_paid sale.total_amount 100 %}%"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <span>
+                            <i class="fas fa-user me-1 text-muted"></i>
+                            <small>{{ sale.created_by.get_full_name|default:sale.created_by.username }}</small>
+                        </span>
+                        <span>
+                            <i class="fas fa-box me-1 text-muted"></i>
+                            <small>{{ sale.items.count }} article(s)</small>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white">
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'sales:sale_detail' sale.id %}" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-eye"></i> Détails
+                    </a>
+                    <a href="{% url 'sales:sale_receipt' sale.id %}" class="btn btn-sm btn-outline-primary" target="_blank">
+                        <i class="fas fa-print"></i> Reçu
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal d'enregistrement de paiement -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-money-bill-wave me-2"></i>
+                    Enregistrer un paiement
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm" data-url-template="{% url 'sales:sale_record_payment' 0 %}">
+                    <input type="hidden" id="paymentSaleId">
+                    <div class="mb-3">
+                        <label class="form-label">Montant à payer</label>
+                        <div class="input-group">
+                            <span class="input-group-text">FCFA</span>
+                            <input type="number" class="form-control" id="paymentAmount" required min="1">
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            Reste à payer: <span id="paymentRemaining">0</span> FCFA
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mode de paiement</label>
+                        <select class="form-select" id="paymentMethod">
+                            <option value="cash">Espèces</option>
+                            <option value="mobile">Mobile Money</option>
+                            <option value="card">Carte bancaire</option>
+                            <option value="bank">Virement</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Référence</label>
+                        <input type="text" class="form-control" id="paymentRef" placeholder="N° de transaction...">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success" onclick="submitPayment()">
+                    <i class="fas fa-check-circle me-2"></i>Valider le paiement
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Basculer entre les vues
+    const tableView = document.getElementById('tableViewContainer');
+    const cardView = document.getElementById('cardViewContainer');
+    const tableBtn = document.getElementById('tableView');
+    const cardBtn = document.getElementById('cardView');
+    
+    tableBtn.addEventListener('click', function() {
+        tableView.classList.remove('d-none');
+        cardView.classList.add('d-none');
+        tableBtn.classList.add('active');
+        cardBtn.classList.remove('active');
+    });
+    
+    cardBtn.addEventListener('click', function() {
+        tableView.classList.add('d-none');
+        cardView.classList.remove('d-none');
+        cardBtn.classList.add('active');
+        tableBtn.classList.remove('active');
+    });
+    
+    // Recherche en temps réel
+    const searchInput = document.getElementById('searchSale');
+    const tableRows = document.querySelectorAll('#salesTable tbody tr');
+    const cards = document.querySelectorAll('.sale-card');
+    
+    function filterSales(searchTerm) {
+        searchTerm = searchTerm.toLowerCase();
+        
+        // Tableau
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+        
+        // Cartes
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            card.closest('.col-xl-4').style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    }
+    
+    searchInput.addEventListener('keyup', function() {
+        filterSales(this.value);
+    });
+    
+    // Filtres
+    document.getElementById('applyFilters').addEventListener('click', function() {
+        const selectedStatuses = [];
+        document.querySelectorAll('.filter-status:checked').forEach(cb => {
+            selectedStatuses.push(cb.value);
+        });
+        
+        const period = document.getElementById('periodFilter').value;
+        const today = new Date().toISOString().split('T')[0];
+        
+        tableRows.forEach(row => {
+            let show = true;
+            const status = row.dataset.status;
+            const rowDate = row.dataset.date;
+            
+            // Filtre par statut
+            if (selectedStatuses.length > 0 && !selectedStatuses.includes(status)) {
+                show = false;
+            }
+            
+            // Filtre par période (à implémenter selon vos besoins)
+            if (period === 'today' && rowDate !== today) {
+                show = false;
+            }
+            
+            row.style.display = show ? '' : 'none';
+        });
+        
+        // Fermer le dropdown
+        bootstrap.Dropdown.getInstance(document.querySelector('.dropdown-toggle')).hide();
+    });
+    
+    document.getElementById('resetFilters').addEventListener('click', function() {
+        document.querySelectorAll('.filter-status').forEach(cb => cb.checked = false);
+        document.getElementById('periodFilter').value = '';
+        tableRows.forEach(row => row.style.display = '');
+    });
+    
+    // Export Excel
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        alert('Export des ventes en cours de développement...');
+    });
+});
+
+// Enregistrement de paiement
+function recordPayment(saleId) {
+    document.getElementById('paymentSaleId').value = saleId;
+    const row = document.querySelector(`tr[data-sale-id="${saleId}"]`);
+    const remaining = row ? parseFloat(row.dataset.remaining) || 0 : 0;
+    const amountInput = document.getElementById('paymentAmount');
+    const remainingSpan = document.getElementById('paymentRemaining');
+    if (remainingSpan) {
+        remainingSpan.textContent = remaining.toLocaleString();
+    }
+    if (amountInput) {
+        amountInput.value = remaining > 0 ? remaining : '';
+        amountInput.max = remaining > 0 ? remaining : '';
+    }
+    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    modal.show();
+}
+
+function submitPayment() {
+    const saleId = document.getElementById('paymentSaleId').value;
+    const amount = document.getElementById('paymentAmount').value;
+    const method = document.getElementById('paymentMethod').value;
+    const ref = document.getElementById('paymentRef').value;
+    
+    if (!amount || amount <= 0) {
+        alert('Veuillez saisir un montant valide');
+        return;
+    }
+
+    const form = document.getElementById('paymentForm');
+    const urlTemplate = form.dataset.urlTemplate;
+    const url = urlTemplate.replace('/0/', `/${saleId}/`);
+
+    const csrftoken = (function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    })('csrftoken');
+
+    const payload = new URLSearchParams({
+        amount: amount,
+        method: method,
+        reference: ref
+    });
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: payload.toString()
+    })
+    .then(async response => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) {
+            throw new Error(data.error || 'Erreur lors de l’enregistrement du paiement.');
+        }
+        bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+        document.getElementById('paymentForm').reset();
+        window.location.reload();
+    })
+    .catch(err => {
+        alert(err.message);
+    });
+}
+
+// Raccourcis clavier
+document.addEventListener('keydown', function(e) {
+    // Ctrl+F pour rechercher
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        document.getElementById('searchSale').focus();
+    }
+    // Ctrl+N pour nouvelle vente
+    if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        window.location.href = "{% url 'sales:sale_create' %}";
+    }
+});
+</script>
+
+<style>
+.sale-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: none;
+    overflow: hidden;
+}
+
+.sale-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 25px rgba(0,0,0,0.1) !important;
+}
+
+.sale-card .card-header {
+    border-bottom: none;
+}
+
+/* Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sale-row, .sale-card {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.5rem 0.8rem;
+}
+</style>
+{% endblock %}

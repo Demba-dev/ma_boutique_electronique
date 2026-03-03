@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Paiement du panier - Diaby Electronic{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-shopping-cart me-2"></i>Paiement du panier
+{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}">Produits</a></li>
+    <li class="breadcrumb-item active">Panier</li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Retour aux produits
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Articles</h6>
+            </div>
+            <div class="card-body">
+                {% if items %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Produit</th>
+                                <th class="text-center">Qté</th>
+                                <th class="text-end">Prix</th>
+                                <th class="text-end">Sous-total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr data-price="{{ item.price }}" data-stock="{{ item.stock }}">
+                                <td>{{ item.product.name }}</td>
+                                <td class="text-center" style="max-width: 90px;">
+                                    <input type="number"
+                                           name="qty_{{ item.product.id }}"
+                                           class="form-control form-control-sm cart-qty"
+                                           min="1"
+                                           value="{{ item.qty }}">
+                                    <small class="text-danger d-none stock-warning"></small>
+                                </td>
+                                <td class="text-end">{{ item.price|floatformat:0 }} FCFA</td>
+                                <td class="text-end item-subtotal">{{ item.subtotal|floatformat:0 }} FCFA</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">Votre panier est vide.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0"><i class="fas fa-credit-card me-2 text-primary"></i>Paiement</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Client</label>
+                        <select name="client" class="form-select">
+                            <option value="">Sélectionnez un client...</option>
+                            {% for client in clients %}
+                                <option value="{{ client.id }}" {% if selected_client_id|stringformat:"s" == client.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ client.name }} - {{ client.phone }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Montant total</label>
+                        <div class="input-group">
+                            <span class="input-group-text">FCFA</span>
+                            <input type="text" class="form-control" value="{{ total_amount|floatformat:0 }}" readonly>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Montant payé</label>
+                        <div class="input-group">
+                            <span class="input-group-text">FCFA</span>
+                            <input type="number" class="form-control" name="amount_paid" id="amountPaid" min="0" step="100" value="{{ total_amount|floatformat:0 }}">
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            Reste à payer: <span id="remainingAmount">0</span> FCFA
+                        </small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" name="action" value="update" class="btn btn-outline-primary" {% if not items %}disabled{% endif %}>
+                            <i class="fas fa-sync me-2"></i>Mettre à jour le panier
+                        </button>
+                        <button type="submit" name="action" value="clear" class="btn btn-outline-danger" {% if not items %}disabled{% endif %}>
+                            <i class="fas fa-trash-alt me-2"></i>Vider le panier
+                        </button>
+                        <button type="submit" name="action" value="checkout" class="btn btn-success" {% if not items %}disabled{% endif %}>
+                            <i class="fas fa-check-circle me-2"></i>Valider la vente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let total = parseFloat("{{ total_amount|floatformat:0 }}".replace(/\s/g, '')) || 0;
+    const amountPaid = document.getElementById('amountPaid');
+    const remainingAmount = document.getElementById('remainingAmount');
+
+    function updateRemaining() {
+        if (!amountPaid) return;
+        const paid = parseFloat(amountPaid.value) || 0;
+        if (paid > total) {
+            amountPaid.value = total;
+        }
+        const remaining = total - (parseFloat(amountPaid.value) || 0);
+        remainingAmount.textContent = remaining.toLocaleString();
+    }
+
+    function updateTotalsFromRows() {
+        let newTotal = 0;
+        document.querySelectorAll('tr[data-price]').forEach(row => {
+            const price = parseFloat(row.dataset.price) || 0;
+            const stock = parseInt(row.dataset.stock) || 0;
+            const qtyInput = row.querySelector('.cart-qty');
+            let qty = parseInt(qtyInput?.value) || 0;
+            const warning = row.querySelector('.stock-warning');
+
+            if (qty > stock) {
+                qty = stock;
+                qtyInput.value = stock;
+                if (warning) {
+                    warning.textContent = `Stock max: ${stock}`;
+                    warning.classList.remove('d-none');
+                }
+            } else if (warning) {
+                warning.classList.add('d-none');
+            }
+
+            const subtotal = price * qty;
+            const subtotalCell = row.querySelector('.item-subtotal');
+            if (subtotalCell) {
+                subtotalCell.textContent = subtotal.toLocaleString() + ' FCFA';
+            }
+            newTotal += subtotal;
+        });
+        total = newTotal;
+        const totalField = document.querySelector('input[readonly][value="{{ total_amount|floatformat:0 }}"]');
+        if (totalField) {
+            totalField.value = total.toLocaleString();
+        }
+        updateRemaining();
+    }
+
+    if (amountPaid) {
+        amountPaid.addEventListener('input', updateRemaining);
+        updateRemaining();
+    }
+
+    document.querySelectorAll('.cart-qty').forEach(input => {
+        input.addEventListener('input', updateTotalsFromRows);
+    });
+});
+</script>
+{% endblock %}

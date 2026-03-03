@@ -1,0 +1,528 @@
+<!-- templates/accounts/home.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de bord - Diaby Electronic{% endblock %}
+
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <button type="button" class="btn btn-outline-primary" onclick="window.location.reload()">
+        <i class="fas fa-sync-alt me-2"></i>Actualiser
+    </button>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#helpModal">
+        <i class="fas fa-question-circle me-2"></i>Aide
+    </button>
+</div>
+{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Tableau de bord</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Message de bienvenue personnalisé -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-primary text-white" style="background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-1 text-white">
+                                <i class="fas fa-hand-wave me-2"></i>
+                                Bienvenue, {{ user.get_full_name|default:user.username }} !
+                            </h4>
+                            <p class="mb-0 opacity-75">
+                                {% now "l d F Y" %} | 
+                                <span class="badge bg-light text-dark">
+                                    {% if user.role == 'admin' %}
+                                        <i class="fas fa-crown me-1"></i>Administrateur
+                                    {% elif user.role == 'manager' %}
+                                        <i class="fas fa-chart-line me-1"></i>Gestionnaire
+                                    {% elif user.role == 'seller' %}
+                                        <i class="fas fa-cash-register me-1"></i>Vendeur
+                                    {% else %}
+                                        {{ user.role }}
+                                    {% endif %}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="d-none d-md-block">
+                            <i class="fas fa-store-alt fa-4x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs selon le rôle -->
+    <div class="row mb-4">
+        {% if user.role == 'admin' %}
+            <!-- KPIs Admin - Vue complète -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-start border-primary border-4 shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="small fw-bold text-primary text-uppercase mb-1">
+                                    <i class="fas fa-dollar-sign me-1"></i>Chiffre d'affaires (mois)</div>
+                                <div class="h5 mb-0 fw-bold text-dark">{{ revenue_month|floatformat:0 }} FCFA</div>
+                                {% if revenue_change is not None %}
+                                    <small class="{% if revenue_change >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
+                                        <i class="fas {% if revenue_change >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i>
+                                        {{ revenue_change|floatformat:1 }}%
+                                    </small>
+                                {% else %}
+                                    <small class="text-muted">Aucune donnée mois précédent</small>
+                                {% endif %}
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-chart-line fa-2x text-muted opacity-25"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-start border-success border-4 shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="small fw-bold text-success text-uppercase mb-1">
+                                    <i class="fas fa-box me-1"></i>Produits en stock</div>
+                                <div class="h5 mb-0 fw-bold text-dark">{{ products_in_stock }}</div>
+                                <small class="text-warning fw-bold">{{ out_of_stock }} en rupture</small>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-cubes fa-2x text-muted opacity-25"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-start border-info border-4 shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="small fw-bold text-info text-uppercase mb-1">
+                                    <i class="fas fa-users me-1"></i>Clients actifs</div>
+                                <div class="h5 mb-0 fw-bold text-dark">{{ active_clients }}</div>
+                                <small class="text-info fw-bold">{{ new_clients }} nouveaux</small>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-user-friends fa-2x text-muted opacity-25"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-start border-warning border-4 shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="small fw-bold text-warning text-uppercase mb-1">
+                                    <i class="fas fa-chart-pie me-1"></i>Bénéfice net</div>
+                                <div class="h5 mb-0 fw-bold text-dark">{{ profit_month|floatformat:0 }} FCFA</div>
+                                {% if profit_change is not None %}
+                                    <small class="{% if profit_change >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
+                                        {{ profit_change|floatformat:1 }}%
+                                    </small>
+                                {% else %}
+                                    <small class="text-muted">Aucune donnée mois précédent</small>
+                                {% endif %}
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-coins fa-2x text-muted opacity-25"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        {% elif user.role == 'manager' %}
+            <!-- KPIs Manager - Focus sur stock et rapports -->
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-3 text-center">
+                                <i class="fas fa-boxes fa-3x text-primary"></i>
+                            </div>
+                            <div class="col-9">
+                                <h6 class="text-muted mb-1">Valeur du stock</h6>
+                                <h4 class="mb-0">{{ stock_value|floatformat:0 }} FCFA</h4>
+                                <small class="text-muted">Évaluation au coût d'achat</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-3 text-center">
+                                <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                            </div>
+                            <div class="col-9">
+                                <h6 class="text-muted mb-1">Stock faible</h6>
+                                <h4 class="mb-0">{{ low_stock_count }} produits</h4>
+                                <small class="text-danger">Réapprovisionner</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-3 text-center">
+                                <i class="fas fa-truck fa-3x text-info"></i>
+                            </div>
+                            <div class="col-9">
+                                <h6 class="text-muted mb-1">Livraisons attendues</h6>
+                                <h4 class="mb-0">{{ incoming_week }} entrée(s) 7j</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        {% else %}
+            <!-- KPIs Vendeur - Focus sur ventes -->
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-3 text-center">
+                                <i class="fas fa-shopping-cart fa-3x text-success"></i>
+                            </div>
+                            <div class="col-9">
+                                <h6 class="text-muted mb-1">Ventes aujourd'hui</h6>
+                                <h4 class="mb-0">{{ sales_today_count }} vente(s)</h4>
+                                <small class="text-muted">{{ sales_today_amount|floatformat:0 }} FCFA</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-3 text-center">
+                                <i class="fas fa-star fa-3x text-warning"></i>
+                            </div>
+                            <div class="col-9">
+                                <h6 class="text-muted mb-1">Objectif du mois</h6>
+                                <h4 class="mb-0">{{ sales_month_progress|floatformat:0 }}%</h4>
+                                <div class="progress mt-2" style="height: 5px;">
+                                    <div class="progress-bar bg-success" style="width: {{ sales_month_progress|floatformat:0 }}%"></div>
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    {{ sales_month_amount|floatformat:0 }} / {{ sales_month_target|floatformat:0 }} FCFA
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Contenu principal selon le rôle -->
+    <div class="row">
+        {% if user.role == 'admin' %}
+            <!-- Admin: Graphiques et tables -->
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-chart-area me-2"></i>Aperçu des ventes (7 derniers jours)
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="salesChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4">
+                <div class="card shadow">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-chart-pie me-2"></i>Répartition des ventes
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="categoryChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 mb-4">
+                <div class="card shadow">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-history me-2"></i>Dernières activités
+                        </h6>
+                        <a href="{% url 'sales:sale_list' %}" class="btn btn-sm btn-primary">Voir tout</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <h6 class="text-muted mb-3">Ventes récentes</h6>
+                                <div class="list-group">
+                                    {% for sale in recent_sales %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>#{{ sale.invoice_number }}</strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                {{ sale.client.name|default:"Client inconnu" }} — {{ sale.created_by.username }}
+                                            </small>
+                                        </div>
+                                        <div class="text-end">
+                                            <strong>{{ sale.total_amount|floatformat:0 }} FCFA</strong>
+                                            <br>
+                                            <small class="text-muted">{{ sale.created_at|timesince }}</small>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <div class="list-group-item text-muted">Aucune vente récente</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <h6 class="text-muted mb-3">Mouvements de stock</h6>
+                                <div class="list-group">
+                                    {% for mv in recent_stock %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ mv.product.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ mv.get_type_display }} — {{ mv.quantity }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <small class="text-muted">{{ mv.created_at|timesince }}</small>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <div class="list-group-item text-muted">Aucun mouvement récent</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        {% elif user.role == 'manager' %}
+            <!-- Manager: Gestion stock et alertes -->
+            <div class="col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-exclamation-triangle me-2 text-warning"></i>Alertes stock
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% for product in low_stock_products %}
+                            <a href="{% url 'products:product_detail' product.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                {{ product.name }}
+                                <span class="badge bg-warning text-dark">{{ product.stock_quantity }} restants</span>
+                            </a>
+                            {% empty %}
+                            <div class="list-group-item text-muted">Aucune alerte stock</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-clock me-2"></i>Mouvements récents
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% for mv in recent_movements %}
+                            <div class="list-group-item">
+                                <small class="text-muted">{{ mv.created_at|timesince }}</small>
+                                <p class="mb-0">{{ mv.get_type_display }}: {{ mv.quantity }} x {{ mv.product.name }}</p>
+                            </div>
+                            {% empty %}
+                            <div class="list-group-item text-muted">Aucun mouvement récent</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        {% else %}
+            <!-- Vendeur: Actions rapides et ventes récentes -->
+            <div class="col-md-5 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-bolt me-2"></i>Actions rapides
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'sales:cart_checkout' %}" class="btn btn-success btn-lg">
+                                <i class="fas fa-plus-circle me-2"></i>Nouvelle vente
+                            </a>
+                            <a href="{% url 'products:product_list' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-search me-2"></i>Rechercher un produit
+                            </a>
+                            <a href="{% url 'clients:client_create' %}" class="btn btn-outline-info">
+                                <i class="fas fa-user-plus me-2"></i>Nouveau client
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-7 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-shopping-bag me-2"></i>Mes dernières ventes
+                        </h6>
+                        <a href="{% url 'sales:sale_list' %}" class="btn btn-sm btn-outline-primary">Voir tout</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% for sale in recent_sales %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>#{{ sale.invoice_number }}</strong>
+                                    <br>
+                                    <small class="text-muted">Client: {{ sale.client.name|default:"Client inconnu" }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <strong>{{ sale.total_amount|floatformat:0 }} FCFA</strong>
+                                    <br>
+                                    <small class="text-muted">{{ sale.created_at|timesince }}</small>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="list-group-item text-muted">Aucune vente récente</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal d'aide -->
+<div class="modal fade" id="helpModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-question-circle me-2"></i>Aide - Tableau de bord
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Rôle: {{ user.get_role_display }}</h6>
+                <hr>
+                <p><strong>Vos permissions:</strong></p>
+                <ul class="list-unstyled">
+                    {% if user.role == 'admin' %}
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Accès complet</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Gestion des utilisateurs</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Tous les rapports</li>
+                    {% elif user.role == 'manager' %}
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Gestion du stock</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Rapports de vente</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Gestion des fournisseurs</li>
+                    {% else %}
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Création de ventes</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Consultation des produits</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Gestion des clients</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if user.role == 'admin' %}
+    // Graphique des ventes
+    var ctx = document.getElementById('salesChart').getContext('2d');
+    const salesLabels = {{ sales_chart_labels|safe }};
+    const salesValues = {{ sales_chart_values|safe }};
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: salesLabels,
+            datasets: [{
+                label: 'Ventes (FCFA)',
+                data: salesValues,
+                borderColor: '#283593',
+                backgroundColor: 'rgba(40, 53, 147, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Graphique des catégories
+    var ctx2 = document.getElementById('categoryChart').getContext('2d');
+    const categoryLabels = {{ category_chart_labels|safe }};
+    const categoryValues = {{ category_chart_values|safe }};
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                data: categoryValues,
+                backgroundColor: ['#283593', '#5c6bc0', '#9fa8da']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}
