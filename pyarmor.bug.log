@@ -1,0 +1,12 @@
+[BUG]: no found input "license"
+
+## Command Line
+/home/demba/dev/django/diaby_electronic/venv/bin/pyarmor gen license --expired 2026-03-07
+
+## Environments
+Python 3.13.7
+Pyarmor 9.2.3 (trial), 000000, non-profits
+Platform linux.x86_64
+Native linux.x86_64
+Home /home/demba/.pyarmor
+

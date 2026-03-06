@@ -1,0 +1,6 @@
+asgiref==3.11.1
+Django==6.0.2
+pillow==12.1.1
+pyarmor==9.2.3
+pyarmor.cli.core==8.1.0
+sqlparse==0.5.5
